@@ -1,14 +1,18 @@
 import { EventsController } from './events.controller';
 import { EventsService } from './events.service';
 import { ListPublishedQueryDto } from './dto/list-published-query.dto';
+import { ListFeaturedQueryDto } from './dto/list-featured-query.dto';
 
 describe('EventsController', () => {
   function createController(): {
     controller: EventsController;
-    service: jest.Mocked<Pick<EventsService, 'getPublished'>>;
+    service: jest.Mocked<Pick<EventsService, 'getPublished' | 'getFeatured'>>;
   } {
-    const service: jest.Mocked<Pick<EventsService, 'getPublished'>> = {
+    const service: jest.Mocked<
+      Pick<EventsService, 'getPublished' | 'getFeatured'>
+    > = {
       getPublished: jest.fn(),
+      getFeatured: jest.fn(),
     };
     const controller = new EventsController(
       service as unknown as EventsService,
@@ -32,5 +36,23 @@ describe('EventsController', () => {
     service.getPublished.mockResolvedValue(dtos);
 
     await expect(controller.findPublished({ offset: 0 })).resolves.toBe(dtos);
+  });
+
+  it('repassa o limit da query para o EventsService.getFeatured', async () => {
+    const { controller, service } = createController();
+    service.getFeatured.mockResolvedValue([]);
+    const query: ListFeaturedQueryDto = { limit: 5 };
+
+    await controller.findFeatured(query);
+
+    expect(service.getFeatured).toHaveBeenCalledWith(5);
+  });
+
+  it('retorna o array resolvido pelo EventsService.getFeatured', async () => {
+    const { controller, service } = createController();
+    const dtos = [{ id: '1' }] as never;
+    service.getFeatured.mockResolvedValue(dtos);
+
+    await expect(controller.findFeatured({ limit: 3 })).resolves.toBe(dtos);
   });
 });

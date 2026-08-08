@@ -55,6 +55,26 @@ const API_CONTRACT_KEYS = [
 
 const FORBIDDEN_KEYS = ['status', 'created_by', 'motivo_recusa'];
 
+/**
+ * Contrato do DTO enxuto de GET /events/featured — só os campos que
+ * E:\agendas_eventos\src\components\EventCard.jsx lê quando a home renderiza
+ * o card (variant="compact", showInfoRows=false, showDateBadge,
+ * actionInternal — ver UpcomingEvents.jsx). Deliberadamente NÃO inclui
+ * dia_semana/periodo/modalidade/link/cidade/estado/endereco/updated_at:
+ * se um desses aparecer aqui, é regressão do contrato mínimo, não um campo
+ * "esquecido".
+ */
+const FEATURED_CONTRACT_KEYS = [
+  'id',
+  'slug',
+  'nome',
+  'descricao',
+  'data_evento',
+  'horario',
+  'imagem',
+  'created_at',
+];
+
 function buildEvento(): Evento {
   return {
     id: '11111111-1111-1111-1111-111111111111',
@@ -129,6 +149,81 @@ describe('Contrato de resposta — GET /events/published', () => {
     const [firstEvent] = response.body as EventResponseBody[];
 
     FORBIDDEN_KEYS.forEach((key) => {
+      expect(firstEvent).not.toHaveProperty(key);
+    });
+  });
+});
+
+describe('Contrato de resposta — GET /events/featured', () => {
+  let app: INestApplication;
+  let server: Server;
+  let prisma: DeepMockProxy<PrismaService>;
+
+  beforeAll(async () => {
+    prisma = mockDeep<PrismaService>();
+
+    const moduleRef = await Test.createTestingModule({
+      imports: [AppModule],
+    })
+      .overrideProvider(PrismaService)
+      .useValue(prisma)
+      .compile();
+
+    app = moduleRef.createNestApplication();
+    configureApp(app);
+    await app.init();
+    server = app.getHttpServer() as Server;
+
+    prisma.evento.findMany.mockResolvedValue([
+      {
+        id: '11111111-1111-1111-1111-111111111111',
+        nome: 'Meetup Café Bugado',
+        slug: 'meetup-cafe-bugado',
+        descricao: 'Um encontro mensal da comunidade',
+        data_evento: '10/03/2026',
+        horario: '19:00',
+        imagem: null,
+        created_at: new Date('2026-01-01T00:00:00.000Z'),
+      } as never,
+    ]);
+  });
+
+  afterAll(async () => {
+    await app.close();
+  });
+
+  it('bate exatamente com o contrato mínimo documentado (8 campos)', async () => {
+    const response = await request(server).get('/events/featured');
+    const [firstEvent] = response.body as EventResponseBody[];
+
+    expect(Object.keys(firstEvent).sort()).toEqual(
+      [...FEATURED_CONTRACT_KEYS].sort(),
+    );
+  });
+
+  it('nunca vaza campos internos de moderação', async () => {
+    const response = await request(server).get('/events/featured');
+    const [firstEvent] = response.body as EventResponseBody[];
+
+    FORBIDDEN_KEYS.forEach((key) => {
+      expect(firstEvent).not.toHaveProperty(key);
+    });
+  });
+
+  it('não inclui os campos "completos" que o endpoint /published tem e este não deve ter', async () => {
+    const response = await request(server).get('/events/featured');
+    const [firstEvent] = response.body as EventResponseBody[];
+
+    [
+      'dia_semana',
+      'periodo',
+      'modalidade',
+      'endereco',
+      'cidade',
+      'estado',
+      'link',
+      'updated_at',
+    ].forEach((key) => {
       expect(firstEvent).not.toHaveProperty(key);
     });
   });

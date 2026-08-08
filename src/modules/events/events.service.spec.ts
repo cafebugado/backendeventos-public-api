@@ -1,5 +1,8 @@
 import { Evento } from '@prisma/client';
-import { IEventoRepository } from './repositories/evento.repository.interface';
+import {
+  EventoFeaturedFields,
+  IEventoRepository,
+} from './repositories/evento.repository.interface';
 import { EventsService } from './events.service';
 
 function buildEvento(overrides: Partial<Evento> = {}): Evento {
@@ -27,12 +30,31 @@ function buildEvento(overrides: Partial<Evento> = {}): Evento {
   };
 }
 
+function buildEventoFeatured(
+  overrides: Partial<EventoFeaturedFields> = {},
+): EventoFeaturedFields {
+  return {
+    id: '11111111-1111-1111-1111-111111111111',
+    slug: 'meetup-cafe-bugado',
+    nome: 'Meetup Café Bugado',
+    descricao: null,
+    data_evento: '10/03/2026',
+    horario: '19:00',
+    imagem: null,
+    created_at: new Date('2026-01-01T00:00:00.000Z'),
+    ...overrides,
+  };
+}
+
 describe('EventsService', () => {
   function createService(): {
     service: EventsService;
     repo: jest.Mocked<IEventoRepository>;
   } {
-    const repo: jest.Mocked<IEventoRepository> = { findPublished: jest.fn() };
+    const repo: jest.Mocked<IEventoRepository> = {
+      findPublished: jest.fn(),
+      findFeatured: jest.fn(),
+    };
     return { service: new EventsService(repo), repo };
   }
 
@@ -73,6 +95,56 @@ describe('EventsService', () => {
       id: '11111111-1111-1111-1111-111111111111',
       slug: 'meetup-cafe-bugado',
       nome: 'Meetup Café Bugado',
+    });
+  });
+
+  describe('getFeatured', () => {
+    it('retorna array vazio sem erro quando não há eventos publicados', async () => {
+      const { service, repo } = createService();
+      repo.findFeatured.mockResolvedValue([]);
+
+      await expect(service.getFeatured(3)).resolves.toEqual([]);
+    });
+
+    it('repassa o limit para o repositório', async () => {
+      const { service, repo } = createService();
+      repo.findFeatured.mockResolvedValue([]);
+
+      await service.getFeatured(5);
+
+      // eslint-disable-next-line @typescript-eslint/unbound-method -- jest.fn() em interface, não é um método de classe real
+      expect(repo.findFeatured).toHaveBeenCalledWith(5);
+    });
+
+    it('usa 3 como limit quando nenhum é informado', async () => {
+      const { service, repo } = createService();
+      repo.findFeatured.mockResolvedValue([]);
+
+      await service.getFeatured();
+
+      // eslint-disable-next-line @typescript-eslint/unbound-method -- jest.fn() em interface, não é um método de classe real
+      expect(repo.findFeatured).toHaveBeenCalledWith(3);
+    });
+
+    it('mapeia cada entidade para o DTO enxuto, só com os 8 campos', async () => {
+      const { service, repo } = createService();
+      repo.findFeatured.mockResolvedValue([buildEventoFeatured()]);
+
+      const result = await service.getFeatured();
+
+      expect(result).toHaveLength(1);
+      expect(Object.keys(result[0]).sort()).toEqual(
+        [
+          'id',
+          'slug',
+          'nome',
+          'descricao',
+          'data_evento',
+          'horario',
+          'imagem',
+          'created_at',
+        ].sort(),
+      );
     });
   });
 });

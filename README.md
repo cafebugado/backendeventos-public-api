@@ -97,12 +97,13 @@ npm run lint
 Todos os testes (unitários e e2e) usam um `PrismaService` mockado (`jest-mock-extended`) —
 rodam completos sem exigir conexão real ao Supabase.
 
-## Endpoints implementados (Sprint 1)
+## Endpoints implementados
 
 | Método | Rota | Descrição |
 |---|---|---|
 | `GET` | `/health` | Verifica a aplicação e a conexão com o banco (`SELECT 1`). |
-| `GET` | `/events/published` | Eventos com `status = 'publicado'`, ordenados por `created_at DESC`. Aceita `?limit=1-100` e `?offset=>=0`, ambos opcionais. |
+| `GET` | `/events/published` | Eventos com `status = 'publicado'`, ordenados por `created_at DESC`. Aceita `?limit=1-100` e `?offset=>=0`, ambos opcionais. DTO completo (8 campos de apresentação + metadados). |
+| `GET` | `/events/featured` | Os últimos eventos cadastrados (`status = 'publicado'`, ordenados por `created_at DESC`). Aceita `?limit=1-10`, default `3`. DTO **enxuto** — só `id, slug, nome, descricao, data_evento, horario, imagem, created_at`, os únicos campos que o card de destaque da home (`E:\agendas_eventos`) lê. Feito pra ser o mais rápido possível: usa `select` do Prisma pra não trazer colunas que não vão ser usadas. |
 
 Veja `SPRINT.md` para o roadmap completo (sprints 2–6: tags, upcoming, detalhe por slug,
 estatísticas, contribuidores, galeria, recomendados).
