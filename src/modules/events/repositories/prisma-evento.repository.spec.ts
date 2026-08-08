@@ -24,11 +24,74 @@ describe('PrismaEventoRepository', () => {
     prisma.evento.findMany.mockResolvedValue([]);
     const repo = new PrismaEventoRepository(prisma);
 
-    await repo.findPublished(5, 10);
+    await repo.findPublished({ limit: 5, offset: 10 });
 
     // eslint-disable-next-line @typescript-eslint/unbound-method -- mock do jest-mock-extended, não chamada de método real
     expect(prisma.evento.findMany).toHaveBeenCalledWith({
       where: { status: 'publicado' },
+      orderBy: { created_at: 'desc' },
+      take: 5,
+      skip: 10,
+    });
+  });
+
+  it('filtra por cidade (case-insensitive) quando informada', async () => {
+    const prisma = mockDeep<PrismaService>();
+    prisma.evento.findMany.mockResolvedValue([]);
+    const repo = new PrismaEventoRepository(prisma);
+
+    await repo.findPublished({ cidade: 'São Paulo' });
+
+    // eslint-disable-next-line @typescript-eslint/unbound-method -- mock do jest-mock-extended, não chamada de método real
+    expect(prisma.evento.findMany).toHaveBeenCalledWith({
+      where: {
+        status: 'publicado',
+        cidade: { equals: 'São Paulo', mode: 'insensitive' },
+      },
+      orderBy: { created_at: 'desc' },
+      take: undefined,
+      skip: undefined,
+    });
+  });
+
+  it('filtra por modalidade (case-insensitive) quando informada', async () => {
+    const prisma = mockDeep<PrismaService>();
+    prisma.evento.findMany.mockResolvedValue([]);
+    const repo = new PrismaEventoRepository(prisma);
+
+    await repo.findPublished({ modalidade: 'Online' });
+
+    // eslint-disable-next-line @typescript-eslint/unbound-method -- mock do jest-mock-extended, não chamada de método real
+    expect(prisma.evento.findMany).toHaveBeenCalledWith({
+      where: {
+        status: 'publicado',
+        modalidade: { equals: 'Online', mode: 'insensitive' },
+      },
+      orderBy: { created_at: 'desc' },
+      take: undefined,
+      skip: undefined,
+    });
+  });
+
+  it('combina cidade, modalidade, limit e offset na mesma query', async () => {
+    const prisma = mockDeep<PrismaService>();
+    prisma.evento.findMany.mockResolvedValue([]);
+    const repo = new PrismaEventoRepository(prisma);
+
+    await repo.findPublished({
+      cidade: 'São Paulo',
+      modalidade: 'Presencial',
+      limit: 5,
+      offset: 10,
+    });
+
+    // eslint-disable-next-line @typescript-eslint/unbound-method -- mock do jest-mock-extended, não chamada de método real
+    expect(prisma.evento.findMany).toHaveBeenCalledWith({
+      where: {
+        status: 'publicado',
+        cidade: { equals: 'São Paulo', mode: 'insensitive' },
+        modalidade: { equals: 'Presencial', mode: 'insensitive' },
+      },
       orderBy: { created_at: 'desc' },
       take: 5,
       skip: 10,

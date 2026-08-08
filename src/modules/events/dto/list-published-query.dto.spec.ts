@@ -46,4 +46,32 @@ describe('ListPublishedQueryDto', () => {
     expect(instance.limit).toBe(5);
     expect(instance.offset).toBe(10);
   });
+
+  it('aceita cidade e modalidade como strings', async () => {
+    const errors = await validateQuery({
+      cidade: 'São Paulo',
+      modalidade: 'Online',
+    });
+
+    expect(errors).toHaveLength(0);
+  });
+
+  it('aceita ausência de cidade/modalidade (ambos opcionais)', async () => {
+    const instance = plainToInstance(ListPublishedQueryDto, {});
+    const errors = await validate(instance);
+
+    expect(errors).toHaveLength(0);
+    expect(instance.cidade).toBeUndefined();
+    expect(instance.modalidade).toBeUndefined();
+  });
+
+  it('rejeita cidade acima de 120 caracteres', async () => {
+    const errors = await validateQuery({ cidade: 'a'.repeat(121) });
+    expect(errors.length).toBeGreaterThan(0);
+  });
+
+  it('rejeita modalidade acima de 60 caracteres', async () => {
+    const errors = await validateQuery({ modalidade: 'a'.repeat(61) });
+    expect(errors.length).toBeGreaterThan(0);
+  });
 });

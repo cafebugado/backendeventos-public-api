@@ -12,8 +12,15 @@ export type EventoFeaturedFields = Pick<
   | 'created_at'
 >;
 
+export interface FindPublishedFilters {
+  cidade?: string;
+  modalidade?: string;
+  limit?: number;
+  offset?: number;
+}
+
 export interface IEventoRepository {
-  findPublished(limit?: number, offset?: number): Promise<Evento[]>;
+  findPublished(filters?: FindPublishedFilters): Promise<Evento[]>;
   findFeatured(limit: number): Promise<EventoFeaturedFields[]>;
 }
 

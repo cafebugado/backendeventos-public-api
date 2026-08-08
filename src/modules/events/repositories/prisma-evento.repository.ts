@@ -3,6 +3,7 @@ import { Evento } from '@prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
 import {
   EventoFeaturedFields,
+  FindPublishedFilters,
   IEventoRepository,
 } from './evento.repository.interface';
 
@@ -10,9 +11,16 @@ import {
 export class PrismaEventoRepository implements IEventoRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  findPublished(limit?: number, offset?: number): Promise<Evento[]> {
+  findPublished(filters: FindPublishedFilters = {}): Promise<Evento[]> {
+    const { cidade, modalidade, limit, offset } = filters;
     return this.prisma.evento.findMany({
-      where: { status: 'publicado' },
+      where: {
+        status: 'publicado',
+        ...(cidade && { cidade: { equals: cidade, mode: 'insensitive' } }),
+        ...(modalidade && {
+          modalidade: { equals: modalidade, mode: 'insensitive' },
+        }),
+      },
       orderBy: { created_at: 'desc' },
       take: limit,
       skip: offset,

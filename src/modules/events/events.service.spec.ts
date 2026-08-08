@@ -65,14 +65,34 @@ describe('EventsService', () => {
     await expect(service.getPublished()).resolves.toEqual([]);
   });
 
-  it('repassa limit e offset para o repositório', async () => {
+  it('repassa o objeto de filtros (limit/offset/cidade/modalidade) para o repositório', async () => {
     const { service, repo } = createService();
     repo.findPublished.mockResolvedValue([]);
 
-    await service.getPublished(5, 10);
+    await service.getPublished({
+      limit: 5,
+      offset: 10,
+      cidade: 'São Paulo',
+      modalidade: 'Online',
+    });
 
     // eslint-disable-next-line @typescript-eslint/unbound-method -- jest.fn() em interface, não é um método de classe real
-    expect(repo.findPublished).toHaveBeenCalledWith(5, 10);
+    expect(repo.findPublished).toHaveBeenCalledWith({
+      limit: 5,
+      offset: 10,
+      cidade: 'São Paulo',
+      modalidade: 'Online',
+    });
+  });
+
+  it('funciona sem nenhum filtro informado', async () => {
+    const { service, repo } = createService();
+    repo.findPublished.mockResolvedValue([]);
+
+    await service.getPublished();
+
+    // eslint-disable-next-line @typescript-eslint/unbound-method -- jest.fn() em interface, não é um método de classe real
+    expect(repo.findPublished).toHaveBeenCalledWith(undefined);
   });
 
   it('mapeia cada entidade para o DTO público, omitindo campos internos', async () => {

@@ -1,6 +1,13 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsInt, IsOptional, Max, Min } from 'class-validator';
+import {
+  IsInt,
+  IsOptional,
+  IsString,
+  Max,
+  MaxLength,
+  Min,
+} from 'class-validator';
 
 export class ListPublishedQueryDto {
   @ApiPropertyOptional({
@@ -22,4 +29,22 @@ export class ListPublishedQueryDto {
   @IsInt()
   @Min(0)
   offset?: number = 0;
+
+  @ApiPropertyOptional({
+    maxLength: 120,
+    description: 'Filtra por cidade exata (case-insensitive).',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  cidade?: string;
+
+  @ApiPropertyOptional({
+    maxLength: 60,
+    description: 'Filtra por modalidade exata (ex.: "Online", "Presencial").',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(60)
+  modalidade?: string;
 }

@@ -20,7 +20,7 @@ export class EventsController {
   findPublished(
     @Query() query: ListPublishedQueryDto,
   ): Promise<EventPublicResponseDto[]> {
-    return this.eventsService.getPublished(query.limit, query.offset);
+    return this.eventsService.getPublished(query);
   }
 
   @Get('featured')

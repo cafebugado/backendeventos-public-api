@@ -2,7 +2,10 @@ import { Inject, Injectable } from '@nestjs/common';
 import { EventPublicResponseDto } from './dto/event-public-response.dto';
 import { EventFeaturedResponseDto } from './dto/event-featured-response.dto';
 import { EVENTO_REPOSITORY } from './repositories/evento.repository.interface';
-import type { IEventoRepository } from './repositories/evento.repository.interface';
+import type {
+  FindPublishedFilters,
+  IEventoRepository,
+} from './repositories/evento.repository.interface';
 
 @Injectable()
 export class EventsService {
@@ -12,10 +15,9 @@ export class EventsService {
   ) {}
 
   async getPublished(
-    limit?: number,
-    offset?: number,
+    filters?: FindPublishedFilters,
   ): Promise<EventPublicResponseDto[]> {
-    const eventos = await this.eventoRepository.findPublished(limit, offset);
+    const eventos = await this.eventoRepository.findPublished(filters);
     return eventos.map((evento) => EventPublicResponseDto.fromEntity(evento));
   }
 

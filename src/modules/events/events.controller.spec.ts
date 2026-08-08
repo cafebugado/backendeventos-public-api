@@ -20,14 +20,19 @@ describe('EventsController', () => {
     return { controller, service };
   }
 
-  it('repassa limit e offset da query para o EventsService', async () => {
+  it('repassa o objeto de query inteiro (limit/offset/cidade/modalidade) para o EventsService', async () => {
     const { controller, service } = createController();
     service.getPublished.mockResolvedValue([]);
-    const query: ListPublishedQueryDto = { limit: 5, offset: 10 };
+    const query: ListPublishedQueryDto = {
+      limit: 5,
+      offset: 10,
+      cidade: 'São Paulo',
+      modalidade: 'Online',
+    };
 
     await controller.findPublished(query);
 
-    expect(service.getPublished).toHaveBeenCalledWith(5, 10);
+    expect(service.getPublished).toHaveBeenCalledWith(query);
   });
 
   it('retorna o array resolvido pelo EventsService', async () => {

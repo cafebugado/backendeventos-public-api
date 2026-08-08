@@ -115,6 +115,70 @@ describe('GET /events/published (e2e)', () => {
     await request(server).get('/events/published?limit=101').expect(400);
   });
 
+  it('filtra por cidade repassando o where correto ao Prisma', async () => {
+    prisma.evento.findMany.mockResolvedValue([buildEvento()]);
+
+    await request(server)
+      .get('/events/published?cidade=S%C3%A3o%20Paulo')
+      .expect(200);
+
+    // eslint-disable-next-line @typescript-eslint/unbound-method -- mock do jest-mock-extended
+    expect(prisma.evento.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          status: 'publicado',
+          cidade: { equals: 'São Paulo', mode: 'insensitive' },
+        },
+      }),
+    );
+  });
+
+  it('filtra por modalidade repassando o where correto ao Prisma', async () => {
+    prisma.evento.findMany.mockResolvedValue([buildEvento()]);
+
+    await request(server)
+      .get('/events/published?modalidade=Online')
+      .expect(200);
+
+    // eslint-disable-next-line @typescript-eslint/unbound-method -- mock do jest-mock-extended
+    expect(prisma.evento.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          status: 'publicado',
+          modalidade: { equals: 'Online', mode: 'insensitive' },
+        },
+      }),
+    );
+  });
+
+  it('combina cidade, modalidade, limit e offset na mesma requisição', async () => {
+    prisma.evento.findMany.mockResolvedValue([buildEvento()]);
+
+    await request(server)
+      .get(
+        '/events/published?cidade=S%C3%A3o%20Paulo&modalidade=Presencial&limit=5&offset=10',
+      )
+      .expect(200);
+
+    // eslint-disable-next-line @typescript-eslint/unbound-method -- mock do jest-mock-extended
+    expect(prisma.evento.findMany).toHaveBeenCalledWith({
+      where: {
+        status: 'publicado',
+        cidade: { equals: 'São Paulo', mode: 'insensitive' },
+        modalidade: { equals: 'Presencial', mode: 'insensitive' },
+      },
+      orderBy: { created_at: 'desc' },
+      take: 5,
+      skip: 10,
+    });
+  });
+
+  it('rejeita cidade acima de 120 caracteres com 400', async () => {
+    await request(server)
+      .get(`/events/published?cidade=${'a'.repeat(121)}`)
+      .expect(400);
+  });
+
   it('nunca inclui status, created_by ou motivo_recusa no payload', async () => {
     prisma.evento.findMany.mockResolvedValue([buildEvento()]);
 
