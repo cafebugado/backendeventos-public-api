@@ -1,6 +1,7 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { EventPublicResponseDto } from './dto/event-public-response.dto';
 import { EventFeaturedResponseDto } from './dto/event-featured-response.dto';
+import { EventDetailResponseDto } from './dto/event-detail-response.dto';
 import { EVENTO_REPOSITORY } from './repositories/evento.repository.interface';
 import type {
   FindPublishedFilters,
@@ -26,6 +27,8 @@ function todayAtUtcMidnight(): Date {
 
 @Injectable()
 export class EventsService {
+  private readonly logger = new Logger(EventsService.name);
+
   constructor(
     @Inject(EVENTO_REPOSITORY)
     private readonly eventoRepository: IEventoRepository,
@@ -60,6 +63,29 @@ export class EventsService {
     }
     const tags = await this.tagRepository.findTagsForEvento(eventoId);
     return tags.map((tag) => TagResponseDto.fromEntity(tag));
+  }
+
+  async getDetailBySlugOrId(slugOrId: string): Promise<EventDetailResponseDto> {
+    const evento = await this.eventoRepository.findBySlugOrId(slugOrId);
+    if (!evento) {
+      throw new NotFoundException(`Evento '${slugOrId}' não encontrado`);
+    }
+
+    let tags: TagResponseDto[] = [];
+    try {
+      const tagEntities = await this.tagRepository.findTagsForEvento(evento.id);
+      tags = tagEntities.map((tag) => TagResponseDto.fromEntity(tag));
+    } catch (error) {
+      this.logger.error(
+        `Falha ao buscar tags do evento '${evento.id}' para o detalhe agregado`,
+        error instanceof Error ? error.stack : undefined,
+      );
+    }
+
+    return EventDetailResponseDto.from(
+      EventPublicResponseDto.fromEntity(evento),
+      tags,
+    );
   }
 
   async getRecommended(

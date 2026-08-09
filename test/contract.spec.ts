@@ -297,3 +297,61 @@ describe('Contrato de resposta — GET /tags e GET /events/tags-map', () => {
     expect(Object.keys(firstTag).sort()).toEqual([...TAG_CONTRACT_KEYS].sort());
   });
 });
+
+describe('Contrato de resposta — GET /events/slug/{slugOrId}/detail', () => {
+  let app: INestApplication;
+  let server: Server;
+  let prisma: DeepMockProxy<PrismaService>;
+
+  beforeAll(async () => {
+    prisma = mockDeep<PrismaService>();
+
+    const moduleRef = await Test.createTestingModule({
+      imports: [AppModule],
+    })
+      .overrideProvider(PrismaService)
+      .useValue(prisma)
+      .compile();
+
+    app = moduleRef.createNestApplication();
+    configureApp(app);
+    await app.init();
+    server = app.getHttpServer() as Server;
+
+    prisma.evento.findFirst.mockResolvedValue(buildEvento());
+    prisma.tag.findMany.mockResolvedValue([buildTagRow()] as never);
+  });
+
+  afterAll(async () => {
+    await app.close();
+  });
+
+  it('bate exatamente com o envelope { evento, tags }', async () => {
+    const response = await request(server).get(
+      '/events/slug/meetup-cafe-bugado/detail',
+    );
+    const body = response.body as {
+      evento: EventResponseBody;
+      tags: EventResponseBody[];
+    };
+
+    expect(Object.keys(body).sort()).toEqual(['evento', 'tags']);
+    expect(Object.keys(body.evento).sort()).toEqual(
+      [...API_CONTRACT_KEYS].sort(),
+    );
+    expect(Object.keys(body.tags[0]).sort()).toEqual(
+      [...TAG_CONTRACT_KEYS].sort(),
+    );
+  });
+
+  it('nunca vaza campos internos de moderação dentro de evento', async () => {
+    const response = await request(server).get(
+      '/events/slug/meetup-cafe-bugado/detail',
+    );
+    const body = response.body as { evento: EventResponseBody };
+
+    FORBIDDEN_KEYS.forEach((key) => {
+      expect(body.evento).not.toHaveProperty(key);
+    });
+  });
+});

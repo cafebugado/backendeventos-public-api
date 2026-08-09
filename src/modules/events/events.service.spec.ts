@@ -290,6 +290,70 @@ describe('EventsService', () => {
     });
   });
 
+  describe('getDetailBySlugOrId', () => {
+    it('lança NotFoundException quando o evento não existe/não está publicado', async () => {
+      const { service, repo } = createService();
+      repo.findBySlugOrId.mockResolvedValue(null);
+
+      await expect(service.getDetailBySlugOrId('inexistente')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('busca as tags usando o id real do evento (não o slugOrId recebido)', async () => {
+      const { service, repo, tagRepo } = createService();
+      repo.findBySlugOrId.mockResolvedValue(buildEvento());
+      tagRepo.findTagsForEvento.mockResolvedValue([]);
+
+      await service.getDetailBySlugOrId('meetup-cafe-bugado');
+
+      // eslint-disable-next-line @typescript-eslint/unbound-method -- jest.fn() em interface, não é um método de classe real
+      expect(tagRepo.findTagsForEvento).toHaveBeenCalledWith(
+        '11111111-1111-1111-1111-111111111111',
+      );
+    });
+
+    it('compõe evento (DTO público) + tags (DTO de tag) num único envelope', async () => {
+      const { service, repo, tagRepo } = createService();
+      repo.findBySlugOrId.mockResolvedValue(
+        buildEvento({
+          status: 'rascunho',
+          motivo_recusa: 'x',
+          created_by: 'uuid-autor',
+        }),
+      );
+      tagRepo.findTagsForEvento.mockResolvedValue([buildTag()]);
+
+      const result = await service.getDetailBySlugOrId('meetup-cafe-bugado');
+
+      expect(result.evento).not.toHaveProperty('status');
+      expect(result.evento).not.toHaveProperty('created_by');
+      expect(result.evento).not.toHaveProperty('motivo_recusa');
+      expect(result.evento).toMatchObject({
+        id: '11111111-1111-1111-1111-111111111111',
+        slug: 'meetup-cafe-bugado',
+      });
+      expect(result.tags).toEqual([
+        {
+          id: '44444444-4444-4444-4444-444444444444',
+          nome: 'Backend',
+          cor: '#2563eb',
+        },
+      ]);
+    });
+
+    it('retorna tags vazias sem lançar quando o lookup de tags falha (degradação graciosa)', async () => {
+      const { service, repo, tagRepo } = createService();
+      repo.findBySlugOrId.mockResolvedValue(buildEvento());
+      tagRepo.findTagsForEvento.mockRejectedValue(new Error('falha no banco'));
+
+      const result = await service.getDetailBySlugOrId('meetup-cafe-bugado');
+
+      expect(result.tags).toEqual([]);
+      expect(result.evento).toMatchObject({ slug: 'meetup-cafe-bugado' });
+    });
+  });
+
   describe('getRecommended', () => {
     it('lança NotFoundException quando o evento atual não existe/não está publicado', async () => {
       const { service, repo } = createService();

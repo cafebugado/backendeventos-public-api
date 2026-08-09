@@ -14,6 +14,7 @@ describe('EventsController', () => {
         | 'getBySlugOrId'
         | 'getEventTags'
         | 'getRecommended'
+        | 'getDetailBySlugOrId'
       >
     >;
   } {
@@ -25,6 +26,7 @@ describe('EventsController', () => {
         | 'getBySlugOrId'
         | 'getEventTags'
         | 'getRecommended'
+        | 'getDetailBySlugOrId'
       >
     > = {
       getPublished: jest.fn(),
@@ -32,6 +34,7 @@ describe('EventsController', () => {
       getBySlugOrId: jest.fn(),
       getEventTags: jest.fn(),
       getRecommended: jest.fn(),
+      getDetailBySlugOrId: jest.fn(),
     };
     const controller = new EventsController(
       service as unknown as EventsService,
@@ -141,5 +144,27 @@ describe('EventsController', () => {
     service.getRecommended.mockResolvedValue(dtos);
 
     await expect(controller.findRecommended('evento-1', 3)).resolves.toBe(dtos);
+  });
+
+  it('repassa o slugOrId da rota para o EventsService.getDetailBySlugOrId', async () => {
+    const { controller, service } = createController();
+    const dto = { evento: { id: '1' }, tags: [] } as never;
+    service.getDetailBySlugOrId.mockResolvedValue(dto);
+
+    await controller.findDetailBySlugOrId('meetup-cafe-bugado');
+
+    expect(service.getDetailBySlugOrId).toHaveBeenCalledWith(
+      'meetup-cafe-bugado',
+    );
+  });
+
+  it('retorna o envelope resolvido pelo EventsService.getDetailBySlugOrId', async () => {
+    const { controller, service } = createController();
+    const dto = { evento: { id: '1' }, tags: [] } as never;
+    service.getDetailBySlugOrId.mockResolvedValue(dto);
+
+    await expect(
+      controller.findDetailBySlugOrId('meetup-cafe-bugado'),
+    ).resolves.toBe(dto);
   });
 });
