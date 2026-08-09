@@ -7,6 +7,9 @@ import {
   IEventoRepository,
 } from './evento.repository.interface';
 
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 @Injectable()
 export class PrismaEventoRepository implements IEventoRepository {
   constructor(private readonly prisma: PrismaService) {}
@@ -41,6 +44,16 @@ export class PrismaEventoRepository implements IEventoRepository {
         horario: true,
         imagem: true,
         created_at: true,
+      },
+    });
+  }
+
+  findBySlugOrId(slugOrId: string): Promise<Evento | null> {
+    const isUuid = UUID_REGEX.test(slugOrId);
+    return this.prisma.evento.findFirst({
+      where: {
+        status: 'publicado',
+        OR: [{ slug: slugOrId }, ...(isUuid ? [{ id: slugOrId }] : [])],
       },
     });
   }

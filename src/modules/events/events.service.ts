@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { EventPublicResponseDto } from './dto/event-public-response.dto';
 import { EventFeaturedResponseDto } from './dto/event-featured-response.dto';
 import { EVENTO_REPOSITORY } from './repositories/evento.repository.interface';
@@ -24,5 +24,13 @@ export class EventsService {
   async getFeatured(limit = 3): Promise<EventFeaturedResponseDto[]> {
     const eventos = await this.eventoRepository.findFeatured(limit);
     return eventos.map((evento) => EventFeaturedResponseDto.fromEntity(evento));
+  }
+
+  async getBySlugOrId(slugOrId: string): Promise<EventPublicResponseDto> {
+    const evento = await this.eventoRepository.findBySlugOrId(slugOrId);
+    if (!evento) {
+      throw new NotFoundException(`Evento '${slugOrId}' não encontrado`);
+    }
+    return EventPublicResponseDto.fromEntity(evento);
   }
 }

@@ -104,9 +104,10 @@ rodam completos sem exigir conexão real ao Supabase.
 | `GET` | `/health` | Verifica a aplicação e a conexão com o banco (`SELECT 1`). |
 | `GET` | `/events/published` | Eventos com `status = 'publicado'`, ordenados por `created_at DESC`. Aceita `?limit=1-100`, `?offset=>=0`, `?cidade=` e `?modalidade=` (ambos case-insensitive), todos opcionais e combináveis. DTO completo (16 campos de apresentação + metadados). |
 | `GET` | `/events/featured` | Os últimos eventos cadastrados (`status = 'publicado'`, ordenados por `created_at DESC`). Aceita `?limit=1-10`, default `3`. DTO **enxuto** — só `id, slug, nome, descricao, data_evento, horario, imagem, created_at`, os únicos campos que o card de destaque da home (`E:\agendas_eventos`) lê. Feito pra ser o mais rápido possível: usa `select` do Prisma pra não trazer colunas que não vão ser usadas. |
+| `GET` | `/events/slug/:slugOrId` | Busca um evento único por `slug` **ou** `id` (UUID), com `status = 'publicado'`. 404 se não existir ou não estiver publicado. DTO completo, igual ao de `/events/published`. Alimenta a página de detalhe (`/eventos/[slug]`) do frontend. |
 
-Veja `SPRINT.md` para o roadmap completo (sprints 2–6: tags, upcoming, detalhe por slug,
-estatísticas, contribuidores, galeria, recomendados).
+Veja `SPRINT.md` para o roadmap completo (sprints 2–6: tags, upcoming, estatísticas,
+contribuidores, galeria, recomendados).
 
 ## Independência de `D:\backendeventos`
 

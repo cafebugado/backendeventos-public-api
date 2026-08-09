@@ -155,4 +155,74 @@ describe('PrismaEventoRepository', () => {
       await expect(repo.findFeatured(3)).resolves.toBe(eventos);
     });
   });
+
+  describe('findBySlugOrId', () => {
+    it('busca por slug com status publicado, sem incluir id no OR', async () => {
+      const prisma = mockDeep<PrismaService>();
+      prisma.evento.findFirst.mockResolvedValue(null);
+      const repo = new PrismaEventoRepository(prisma);
+
+      await repo.findBySlugOrId('meetup-cafe-bugado');
+
+      // eslint-disable-next-line @typescript-eslint/unbound-method -- mock do jest-mock-extended, não chamada de método real
+      expect(prisma.evento.findFirst).toHaveBeenCalledWith({
+        where: {
+          status: 'publicado',
+          OR: [{ slug: 'meetup-cafe-bugado' }],
+        },
+      });
+    });
+
+    it('inclui id no OR quando slugOrId é um UUID válido', async () => {
+      const prisma = mockDeep<PrismaService>();
+      prisma.evento.findFirst.mockResolvedValue(null);
+      const repo = new PrismaEventoRepository(prisma);
+      const uuid = '11111111-1111-1111-1111-111111111111';
+
+      await repo.findBySlugOrId(uuid);
+
+      // eslint-disable-next-line @typescript-eslint/unbound-method -- mock do jest-mock-extended, não chamada de método real
+      expect(prisma.evento.findFirst).toHaveBeenCalledWith({
+        where: {
+          status: 'publicado',
+          OR: [{ slug: uuid }, { id: uuid }],
+        },
+      });
+    });
+
+    it('não inclui id no OR quando slugOrId não bate com o formato UUID', async () => {
+      const prisma = mockDeep<PrismaService>();
+      prisma.evento.findFirst.mockResolvedValue(null);
+      const repo = new PrismaEventoRepository(prisma);
+
+      await repo.findBySlugOrId('11111111-1111-1111-1111-11111111111z');
+
+      // eslint-disable-next-line @typescript-eslint/unbound-method -- mock do jest-mock-extended, não chamada de método real
+      expect(prisma.evento.findFirst).toHaveBeenCalledWith({
+        where: {
+          status: 'publicado',
+          OR: [{ slug: '11111111-1111-1111-1111-11111111111z' }],
+        },
+      });
+    });
+
+    it('retorna null quando o Prisma não encontra nada', async () => {
+      const prisma = mockDeep<PrismaService>();
+      prisma.evento.findFirst.mockResolvedValue(null);
+      const repo = new PrismaEventoRepository(prisma);
+
+      await expect(repo.findBySlugOrId('inexistente')).resolves.toBeNull();
+    });
+
+    it('retorna o evento resolvido pelo Prisma quando encontrado', async () => {
+      const prisma = mockDeep<PrismaService>();
+      const evento = { id: '1', slug: 'meetup-cafe-bugado' } as never;
+      prisma.evento.findFirst.mockResolvedValue(evento);
+      const repo = new PrismaEventoRepository(prisma);
+
+      await expect(repo.findBySlugOrId('meetup-cafe-bugado')).resolves.toBe(
+        evento,
+      );
+    });
+  });
 });

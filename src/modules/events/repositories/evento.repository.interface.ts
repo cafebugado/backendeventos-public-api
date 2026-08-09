@@ -22,6 +22,7 @@ export interface FindPublishedFilters {
 export interface IEventoRepository {
   findPublished(filters?: FindPublishedFilters): Promise<Evento[]>;
   findFeatured(limit: number): Promise<EventoFeaturedFields[]>;
+  findBySlugOrId(slugOrId: string): Promise<Evento | null>;
 }
 
 export const EVENTO_REPOSITORY = Symbol('EVENTO_REPOSITORY');

@@ -1,3 +1,4 @@
+import { NotFoundException } from '@nestjs/common';
 import { Evento } from '@prisma/client';
 import {
   EventoFeaturedFields,
@@ -54,6 +55,7 @@ describe('EventsService', () => {
     const repo: jest.Mocked<IEventoRepository> = {
       findPublished: jest.fn(),
       findFeatured: jest.fn(),
+      findBySlugOrId: jest.fn(),
     };
     return { service: new EventsService(repo), repo };
   }
@@ -164,6 +166,49 @@ describe('EventsService', () => {
           'imagem',
           'created_at',
         ].sort(),
+      );
+    });
+  });
+
+  describe('getBySlugOrId', () => {
+    it('repassa o slugOrId para o repositório', async () => {
+      const { service, repo } = createService();
+      repo.findBySlugOrId.mockResolvedValue(buildEvento());
+
+      await service.getBySlugOrId('meetup-cafe-bugado');
+
+      // eslint-disable-next-line @typescript-eslint/unbound-method -- jest.fn() em interface, não é um método de classe real
+      expect(repo.findBySlugOrId).toHaveBeenCalledWith('meetup-cafe-bugado');
+    });
+
+    it('mapeia a entidade encontrada para o DTO público, omitindo campos internos', async () => {
+      const { service, repo } = createService();
+      repo.findBySlugOrId.mockResolvedValue(
+        buildEvento({
+          status: 'rascunho',
+          motivo_recusa: 'x',
+          created_by: 'uuid-autor',
+        }),
+      );
+
+      const result = await service.getBySlugOrId('meetup-cafe-bugado');
+
+      expect(result).not.toHaveProperty('status');
+      expect(result).not.toHaveProperty('created_by');
+      expect(result).not.toHaveProperty('motivo_recusa');
+      expect(result).toMatchObject({
+        id: '11111111-1111-1111-1111-111111111111',
+        slug: 'meetup-cafe-bugado',
+        nome: 'Meetup Café Bugado',
+      });
+    });
+
+    it('lança NotFoundException quando o repositório retorna null', async () => {
+      const { service, repo } = createService();
+      repo.findBySlugOrId.mockResolvedValue(null);
+
+      await expect(service.getBySlugOrId('inexistente')).rejects.toThrow(
+        NotFoundException,
       );
     });
   });

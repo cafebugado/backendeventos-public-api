@@ -6,13 +6,16 @@ import { ListFeaturedQueryDto } from './dto/list-featured-query.dto';
 describe('EventsController', () => {
   function createController(): {
     controller: EventsController;
-    service: jest.Mocked<Pick<EventsService, 'getPublished' | 'getFeatured'>>;
+    service: jest.Mocked<
+      Pick<EventsService, 'getPublished' | 'getFeatured' | 'getBySlugOrId'>
+    >;
   } {
     const service: jest.Mocked<
-      Pick<EventsService, 'getPublished' | 'getFeatured'>
+      Pick<EventsService, 'getPublished' | 'getFeatured' | 'getBySlugOrId'>
     > = {
       getPublished: jest.fn(),
       getFeatured: jest.fn(),
+      getBySlugOrId: jest.fn(),
     };
     const controller = new EventsController(
       service as unknown as EventsService,
@@ -59,5 +62,25 @@ describe('EventsController', () => {
     service.getFeatured.mockResolvedValue(dtos);
 
     await expect(controller.findFeatured({ limit: 3 })).resolves.toBe(dtos);
+  });
+
+  it('repassa o slugOrId da rota para o EventsService.getBySlugOrId', async () => {
+    const { controller, service } = createController();
+    const dto = { id: '1' } as never;
+    service.getBySlugOrId.mockResolvedValue(dto);
+
+    await controller.findBySlugOrId('meetup-cafe-bugado');
+
+    expect(service.getBySlugOrId).toHaveBeenCalledWith('meetup-cafe-bugado');
+  });
+
+  it('retorna o DTO resolvido pelo EventsService.getBySlugOrId', async () => {
+    const { controller, service } = createController();
+    const dto = { id: '1', slug: 'meetup-cafe-bugado' } as never;
+    service.getBySlugOrId.mockResolvedValue(dto);
+
+    await expect(controller.findBySlugOrId('meetup-cafe-bugado')).resolves.toBe(
+      dto,
+    );
   });
 });

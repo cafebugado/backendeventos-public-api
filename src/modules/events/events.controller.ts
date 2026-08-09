@@ -1,5 +1,10 @@
-import { Controller, Get, Query, UseInterceptors } from '@nestjs/common';
-import { ApiOkResponse, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { Controller, Get, Param, Query, UseInterceptors } from '@nestjs/common';
+import {
+  ApiNotFoundResponse,
+  ApiOkResponse,
+  ApiQuery,
+  ApiTags,
+} from '@nestjs/swagger';
 import { CacheControlInterceptor } from '../../common/interceptors/cache-control.interceptor';
 import { EventPublicResponseDto } from './dto/event-public-response.dto';
 import { EventFeaturedResponseDto } from './dto/event-featured-response.dto';
@@ -30,5 +35,16 @@ export class EventsController {
     @Query() query: ListFeaturedQueryDto,
   ): Promise<EventFeaturedResponseDto[]> {
     return this.eventsService.getFeatured(query.limit);
+  }
+
+  @Get('slug/:slugOrId')
+  @ApiOkResponse({ type: EventPublicResponseDto })
+  @ApiNotFoundResponse({
+    description: 'Evento não encontrado ou não publicado',
+  })
+  findBySlugOrId(
+    @Param('slugOrId') slugOrId: string,
+  ): Promise<EventPublicResponseDto> {
+    return this.eventsService.getBySlugOrId(slugOrId);
   }
 }
