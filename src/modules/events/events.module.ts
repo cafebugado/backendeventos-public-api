@@ -3,8 +3,10 @@ import { EventsController } from './events.controller';
 import { EventsService } from './events.service';
 import { EVENTO_REPOSITORY } from './repositories/evento.repository.interface';
 import { PrismaEventoRepository } from './repositories/prisma-evento.repository';
+import { TagsModule } from '../tags/tags.module';
 
 @Module({
+  imports: [TagsModule],
   controllers: [EventsController],
   providers: [
     EventsService,

@@ -7,15 +7,31 @@ describe('EventsController', () => {
   function createController(): {
     controller: EventsController;
     service: jest.Mocked<
-      Pick<EventsService, 'getPublished' | 'getFeatured' | 'getBySlugOrId'>
+      Pick<
+        EventsService,
+        | 'getPublished'
+        | 'getFeatured'
+        | 'getBySlugOrId'
+        | 'getEventTags'
+        | 'getRecommended'
+      >
     >;
   } {
     const service: jest.Mocked<
-      Pick<EventsService, 'getPublished' | 'getFeatured' | 'getBySlugOrId'>
+      Pick<
+        EventsService,
+        | 'getPublished'
+        | 'getFeatured'
+        | 'getBySlugOrId'
+        | 'getEventTags'
+        | 'getRecommended'
+      >
     > = {
       getPublished: jest.fn(),
       getFeatured: jest.fn(),
       getBySlugOrId: jest.fn(),
+      getEventTags: jest.fn(),
+      getRecommended: jest.fn(),
     };
     const controller = new EventsController(
       service as unknown as EventsService,
@@ -82,5 +98,48 @@ describe('EventsController', () => {
     await expect(controller.findBySlugOrId('meetup-cafe-bugado')).resolves.toBe(
       dto,
     );
+  });
+
+  it('repassa o eventoId da rota para o EventsService.getEventTags', async () => {
+    const { controller, service } = createController();
+    service.getEventTags.mockResolvedValue([]);
+
+    await controller.findEventTags('evento-1');
+
+    expect(service.getEventTags).toHaveBeenCalledWith('evento-1');
+  });
+
+  it('retorna o array resolvido pelo EventsService.getEventTags', async () => {
+    const { controller, service } = createController();
+    const dtos = [{ id: '1', nome: 'Backend', cor: '#2563eb' }] as never;
+    service.getEventTags.mockResolvedValue(dtos);
+
+    await expect(controller.findEventTags('evento-1')).resolves.toBe(dtos);
+  });
+
+  it('repassa id e limit para o EventsService.getRecommended', async () => {
+    const { controller, service } = createController();
+    service.getRecommended.mockResolvedValue([]);
+
+    await controller.findRecommended('evento-1', 5);
+
+    expect(service.getRecommended).toHaveBeenCalledWith('evento-1', 5);
+  });
+
+  it('repassa undefined quando limit não é informado (EventsService aplica o default)', async () => {
+    const { controller, service } = createController();
+    service.getRecommended.mockResolvedValue([]);
+
+    await controller.findRecommended('evento-1', undefined);
+
+    expect(service.getRecommended).toHaveBeenCalledWith('evento-1', undefined);
+  });
+
+  it('retorna o array resolvido pelo EventsService.getRecommended', async () => {
+    const { controller, service } = createController();
+    const dtos = [{ id: '1' }] as never;
+    service.getRecommended.mockResolvedValue(dtos);
+
+    await expect(controller.findRecommended('evento-1', 3)).resolves.toBe(dtos);
   });
 });

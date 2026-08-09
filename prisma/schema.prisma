@@ -53,9 +53,48 @@ model Evento {
   created_by    String?  @db.Uuid
   created_at    DateTime @default(now()) @db.Timestamptz(6)
   updated_at    DateTime @default(now()) @db.Timestamptz(6)
+  eventoTags    EventoTag[]
 
   @@index([data_evento])
   @@index([status])
   @@index([created_by])
   @@map("eventos")
+}
+
+/// Escrito à mão a partir de D:\backendeventos\app\models\tag.py (SQLAlchemy) e
+/// validado campo a campo contra a tabela real via `information_schema.columns` +
+/// `pg_constraint` usando DIRECT_URL (2026-08-09). 2 divergências do modelo
+/// SQLAlchemy foram corrigidas: `cor` é nullable no banco real (SQLAlchemy
+/// declarava `nullable=False`); existe uma coluna `created_by` (FK para
+/// `auth.users`) que não está no modelo SQLAlchemy — campo interno de autoria,
+/// NUNCA exposto na API pública, mesmo padrão de `Evento.created_by`.
+model Tag {
+  id         String      @id @default(uuid()) @db.Uuid
+  nome       String      @unique @db.Text
+  cor        String?     @default("#2563eb") @db.Text
+  created_at DateTime?   @default(now()) @db.Timestamptz(6)
+  updated_at DateTime?   @default(now()) @db.Timestamptz(6)
+  /// FK lógica para auth.users (Supabase Auth) — NUNCA exposto na API pública.
+  created_by String?     @db.Uuid
+  eventoTags EventoTag[]
+
+  @@map("tags")
+}
+
+/// Escrito à mão a partir de D:\backendeventos\app\models\evento_tag.py
+/// (SQLAlchemy), validado do mesmo jeito que `Tag` acima (2026-08-09). 1
+/// divergência: `created_at` é nullable no banco real (SQLAlchemy declarava
+/// NOT NULL) — tem default `now()`, só não é enforced como NOT NULL.
+model EventoTag {
+  id         String    @id @default(uuid()) @db.Uuid
+  evento_id  String    @db.Uuid
+  tag_id     String    @db.Uuid
+  created_at DateTime? @default(now()) @db.Timestamptz(6)
+  evento     Evento    @relation(fields: [evento_id], references: [id], onDelete: Cascade)
+  tag        Tag       @relation(fields: [tag_id], references: [id], onDelete: Cascade)
+
+  @@unique([evento_id, tag_id])
+  @@index([evento_id])
+  @@index([tag_id])
+  @@map("evento_tags")
 }

@@ -101,6 +101,26 @@
         "statements": 80,
         "functions": 80,
         "lines": 80
+      },
+      "src/modules/tags/tags.controller.ts": {
+        "statements": 80,
+        "functions": 80,
+        "lines": 80
+      },
+      "src/modules/tags/tags.service.ts": {
+        "statements": 80,
+        "functions": 80,
+        "lines": 80
+      },
+      "src/modules/tags/dto/**/*.ts": {
+        "statements": 80,
+        "functions": 80,
+        "lines": 80
+      },
+      "src/modules/tags/repositories/**/*.ts": {
+        "statements": 80,
+        "functions": 80,
+        "lines": 80
       }
     }
   }

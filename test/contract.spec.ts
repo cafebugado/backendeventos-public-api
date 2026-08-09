@@ -228,3 +228,72 @@ describe('Contrato de resposta — GET /events/featured', () => {
     });
   });
 });
+
+const TAG_CONTRACT_KEYS = ['id', 'nome', 'cor'];
+const TAG_FORBIDDEN_KEYS = ['created_at', 'updated_at', 'created_by'];
+
+function buildTagRow() {
+  return {
+    id: '33333333-3333-3333-3333-333333333333',
+    nome: 'Backend',
+    cor: '#2563eb',
+    created_at: new Date('2026-01-01T00:00:00.000Z'),
+    updated_at: new Date('2026-01-01T00:00:00.000Z'),
+    created_by: null,
+  };
+}
+
+describe('Contrato de resposta — GET /tags e GET /events/tags-map', () => {
+  let app: INestApplication;
+  let server: Server;
+  let prisma: DeepMockProxy<PrismaService>;
+
+  beforeAll(async () => {
+    prisma = mockDeep<PrismaService>();
+
+    const moduleRef = await Test.createTestingModule({
+      imports: [AppModule],
+    })
+      .overrideProvider(PrismaService)
+      .useValue(prisma)
+      .compile();
+
+    app = moduleRef.createNestApplication();
+    configureApp(app);
+    await app.init();
+    server = app.getHttpServer() as Server;
+
+    prisma.tag.findMany.mockResolvedValue([buildTagRow()] as never);
+    prisma.eventoTag.findMany.mockResolvedValue([
+      { evento_id: '11111111-1111-1111-1111-111111111111', tag: buildTagRow() },
+    ] as never);
+  });
+
+  afterAll(async () => {
+    await app.close();
+  });
+
+  it('GET /tags bate exatamente com o contrato documentado (id/nome/cor)', async () => {
+    const response = await request(server).get('/tags');
+    const [firstTag] = response.body as EventResponseBody[];
+
+    expect(Object.keys(firstTag).sort()).toEqual([...TAG_CONTRACT_KEYS].sort());
+  });
+
+  it('GET /tags nunca vaza campos internos (created_at/updated_at/created_by)', async () => {
+    const response = await request(server).get('/tags');
+    const [firstTag] = response.body as EventResponseBody[];
+
+    TAG_FORBIDDEN_KEYS.forEach((key) => {
+      expect(firstTag).not.toHaveProperty(key);
+    });
+  });
+
+  it('GET /events/tags-map bate exatamente com o mesmo contrato de tag por evento', async () => {
+    const response = await request(server).get('/events/tags-map');
+    const body = response.body as Record<string, EventResponseBody[]>;
+    const [firstTag] = body['11111111-1111-1111-1111-111111111111'];
+
+    expect(Object.keys(firstTag).sort()).toEqual([...TAG_CONTRACT_KEYS].sort());
+  });
+});

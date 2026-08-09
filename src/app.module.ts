@@ -7,6 +7,7 @@ import { validate } from './config/env.validation';
 import { PrismaModule } from './prisma/prisma.module';
 import { HealthModule } from './modules/health/health.module';
 import { EventsModule } from './modules/events/events.module';
+import { TagsModule } from './modules/tags/tags.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { EventsModule } from './modules/events/events.module';
     PrismaModule,
     HealthModule,
     EventsModule,
+    TagsModule,
   ],
   providers: [
     {
