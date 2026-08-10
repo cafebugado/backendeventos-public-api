@@ -98,3 +98,28 @@ model EventoTag {
   @@index([tag_id])
   @@map("evento_tags")
 }
+
+/// Escrito à mão a partir de D:\backendeventos\app\models\contribuinte.py (SQLAlchemy)
+/// e validado campo a campo contra a tabela real via `information_schema.columns` +
+/// `pg_constraint` usando DIRECT_URL (2026-08-10). 1 divergência do modelo SQLAlchemy
+/// foi corrigida: `created_at`/`updated_at` são nullable no banco real (SQLAlchemy
+/// declarava `Mapped[datetime]` sem `Optional`) — mesmo tipo de divergência já visto
+/// em `EventoTag.created_at`. Sem coluna de "ativo"/"aprovado"/"destaque" — o legado
+/// (`ContribuinteRepository.list_all()`) devolve todos os registros sem filtro,
+/// ordenado por `nome`; replicado sem alteração aqui.
+model Contribuinte {
+  id              String    @id @default(uuid()) @db.Uuid
+  /// Não exposto na API pública — nenhum consumidor do frontend lê esse campo.
+  github_username String    @unique @db.Text
+  nome            String    @db.Text
+  avatar_url      String    @db.Text
+  github_url      String    @db.Text
+  linkedin_url    String?   @db.Text
+  portfolio_url   String?   @db.Text
+  /// Não exposto na API pública.
+  created_at      DateTime? @default(now()) @db.Timestamptz(6)
+  /// Não exposto na API pública.
+  updated_at      DateTime? @default(now()) @db.Timestamptz(6)
+
+  @@map("contribuintes")
+}

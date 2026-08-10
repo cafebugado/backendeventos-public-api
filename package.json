@@ -121,6 +121,26 @@
         "statements": 80,
         "functions": 80,
         "lines": 80
+      },
+      "src/modules/contributors/contributors.controller.ts": {
+        "statements": 80,
+        "functions": 80,
+        "lines": 80
+      },
+      "src/modules/contributors/contributors.service.ts": {
+        "statements": 80,
+        "functions": 80,
+        "lines": 80
+      },
+      "src/modules/contributors/dto/**/*.ts": {
+        "statements": 80,
+        "functions": 80,
+        "lines": 80
+      },
+      "src/modules/contributors/repositories/**/*.ts": {
+        "statements": 80,
+        "functions": 80,
+        "lines": 80
       }
     }
   }

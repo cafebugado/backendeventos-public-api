@@ -355,3 +355,79 @@ describe('Contrato de resposta — GET /events/slug/{slugOrId}/detail', () => {
     });
   });
 });
+
+const CONTRIBUTOR_CONTRACT_KEYS = [
+  'id',
+  'nome',
+  'avatar_url',
+  'github_url',
+  'linkedin_url',
+  'portfolio_url',
+];
+const CONTRIBUTOR_FORBIDDEN_KEYS = [
+  'github_username',
+  'created_at',
+  'updated_at',
+];
+
+function buildContribuinteRow() {
+  return {
+    id: '66666666-6666-6666-6666-666666666666',
+    github_username: 'alice',
+    nome: 'Alice',
+    avatar_url: 'https://example.com/a.png',
+    github_url: 'https://github.com/alice',
+    linkedin_url: 'https://linkedin.com/in/alice',
+    portfolio_url: 'https://alice.dev',
+    created_at: new Date('2026-01-01T00:00:00.000Z'),
+    updated_at: new Date('2026-01-01T00:00:00.000Z'),
+  };
+}
+
+describe('Contrato de resposta — GET /contributors', () => {
+  let app: INestApplication;
+  let server: Server;
+  let prisma: DeepMockProxy<PrismaService>;
+
+  beforeAll(async () => {
+    prisma = mockDeep<PrismaService>();
+
+    const moduleRef = await Test.createTestingModule({
+      imports: [AppModule],
+    })
+      .overrideProvider(PrismaService)
+      .useValue(prisma)
+      .compile();
+
+    app = moduleRef.createNestApplication();
+    configureApp(app);
+    await app.init();
+    server = app.getHttpServer() as Server;
+
+    prisma.contribuinte.findMany.mockResolvedValue([
+      buildContribuinteRow(),
+    ] as never);
+  });
+
+  afterAll(async () => {
+    await app.close();
+  });
+
+  it('bate exatamente com o contrato documentado (6 campos)', async () => {
+    const response = await request(server).get('/contributors');
+    const [first] = response.body as EventResponseBody[];
+
+    expect(Object.keys(first).sort()).toEqual(
+      [...CONTRIBUTOR_CONTRACT_KEYS].sort(),
+    );
+  });
+
+  it('nunca vaza github_username/created_at/updated_at', async () => {
+    const response = await request(server).get('/contributors');
+    const [first] = response.body as EventResponseBody[];
+
+    CONTRIBUTOR_FORBIDDEN_KEYS.forEach((key) => {
+      expect(first).not.toHaveProperty(key);
+    });
+  });
+});

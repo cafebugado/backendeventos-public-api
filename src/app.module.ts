@@ -8,6 +8,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { HealthModule } from './modules/health/health.module';
 import { EventsModule } from './modules/events/events.module';
 import { TagsModule } from './modules/tags/tags.module';
+import { ContributorsModule } from './modules/contributors/contributors.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { TagsModule } from './modules/tags/tags.module';
     HealthModule,
     EventsModule,
     TagsModule,
+    ContributorsModule,
   ],
   providers: [
     {
