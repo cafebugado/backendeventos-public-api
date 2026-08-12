@@ -1,4 +1,5 @@
 import { mockDeep } from 'jest-mock-extended';
+import { SAFE_LIST_LIMIT } from '../../../common/constants/pagination';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { PrismaContributorRepository } from './prisma-contributor.repository';
 
@@ -14,6 +15,7 @@ describe('PrismaContributorRepository', () => {
       // eslint-disable-next-line @typescript-eslint/unbound-method -- mock do jest-mock-extended, não chamada de método real
       expect(prisma.contribuinte.findMany).toHaveBeenCalledWith({
         orderBy: { nome: 'asc' },
+        take: SAFE_LIST_LIMIT,
       });
     });
 

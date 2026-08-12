@@ -1,4 +1,5 @@
 import { mockDeep } from 'jest-mock-extended';
+import { SAFE_LIST_LIMIT } from '../../../common/constants/pagination';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { PrismaGalleryRepository } from './prisma-gallery.repository';
 
@@ -14,11 +15,12 @@ describe('PrismaGalleryRepository', () => {
       // eslint-disable-next-line @typescript-eslint/unbound-method -- mock do jest-mock-extended, não chamada de método real
       expect(prisma.galeriaAlbum.findMany).toHaveBeenCalledWith({
         orderBy: { created_at: 'desc' },
+        take: SAFE_LIST_LIMIT,
         select: {
           id: true,
           created_at: true,
           created_by: true,
-          evento: { select: { nome: true, data_evento: true } },
+          evento: { select: { nome: true, data_evento: true, status: true } },
           comunidade: { select: { nome: true } },
           fotos: {
             orderBy: [{ ordem: 'asc' }, { created_at: 'asc' }],
@@ -35,13 +37,58 @@ describe('PrismaGalleryRepository', () => {
       });
     });
 
-    it('retorna a lista resolvida pelo Prisma', async () => {
+    it('mantém evento quando publicado', async () => {
       const prisma = mockDeep<PrismaService>();
-      const albums = [{ id: '1' }] as never;
+      const albums = [
+        {
+          id: '1',
+          evento: {
+            nome: 'Evento X',
+            data_evento: '01/01/2030',
+            status: 'publicado',
+          },
+        },
+      ] as never;
       prisma.galeriaAlbum.findMany.mockResolvedValue(albums);
       const repo = new PrismaGalleryRepository(prisma);
 
-      await expect(repo.findAlbumsPublic()).resolves.toBe(albums);
+      const result = await repo.findAlbumsPublic();
+
+      expect(result[0].evento).toEqual({
+        nome: 'Evento X',
+        data_evento: '01/01/2030',
+      });
+    });
+
+    it('zera evento quando não publicado, para não vazar nome/data de evento em moderação', async () => {
+      const prisma = mockDeep<PrismaService>();
+      const albums = [
+        {
+          id: '1',
+          evento: {
+            nome: 'Evento Rascunho',
+            data_evento: '01/01/2030',
+            status: 'rascunho',
+          },
+        },
+      ] as never;
+      prisma.galeriaAlbum.findMany.mockResolvedValue(albums);
+      const repo = new PrismaGalleryRepository(prisma);
+
+      const result = await repo.findAlbumsPublic();
+
+      expect(result[0].evento).toBeNull();
+    });
+
+    it('mantém evento nulo quando o álbum não tem evento vinculado', async () => {
+      const prisma = mockDeep<PrismaService>();
+      const albums = [{ id: '1', evento: null }] as never;
+      prisma.galeriaAlbum.findMany.mockResolvedValue(albums);
+      const repo = new PrismaGalleryRepository(prisma);
+
+      const result = await repo.findAlbumsPublic();
+
+      expect(result[0].evento).toBeNull();
     });
   });
 

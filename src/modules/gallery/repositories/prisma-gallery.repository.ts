@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { UserProfile } from '@prisma/client';
+import { SAFE_LIST_LIMIT } from '../../../common/constants/pagination';
 import { PrismaService } from '../../../prisma/prisma.service';
 import {
   GaleriaAlbumWithRelations,
@@ -10,14 +11,15 @@ import {
 export class PrismaGalleryRepository implements IGalleryRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  findAlbumsPublic(): Promise<GaleriaAlbumWithRelations[]> {
-    return this.prisma.galeriaAlbum.findMany({
+  async findAlbumsPublic(): Promise<GaleriaAlbumWithRelations[]> {
+    const albums = await this.prisma.galeriaAlbum.findMany({
       orderBy: { created_at: 'desc' },
+      take: SAFE_LIST_LIMIT,
       select: {
         id: true,
         created_at: true,
         created_by: true,
-        evento: { select: { nome: true, data_evento: true } },
+        evento: { select: { nome: true, data_evento: true, status: true } },
         comunidade: { select: { nome: true } },
         fotos: {
           orderBy: [{ ordem: 'asc' }, { created_at: 'asc' }],
@@ -32,6 +34,17 @@ export class PrismaGalleryRepository implements IGalleryRepository {
         },
       },
     });
+
+    // A relação evento->galeriaAlbum não suporta filtro no select do Prisma
+    // (é to-one), então o filtro de moderação é aplicado aqui: um evento
+    // ainda não publicado não deve vazar nome/data via galeria pública.
+    return albums.map((album) => ({
+      ...album,
+      evento:
+        album.evento?.status === 'publicado'
+          ? { nome: album.evento.nome, data_evento: album.evento.data_evento }
+          : null,
+    }));
   }
 
   findUserProfilesByIds(userIds: string[]): Promise<UserProfile[]> {

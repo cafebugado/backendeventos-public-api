@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Evento } from '@prisma/client';
+import { SAFE_LIST_LIMIT } from '../../../common/constants/pagination';
 import { PrismaService } from '../../../prisma/prisma.service';
 import {
   EventoFeaturedFields,
@@ -25,7 +26,7 @@ export class PrismaEventoRepository implements IEventoRepository {
         }),
       },
       orderBy: { created_at: 'desc' },
-      take: limit,
+      take: limit ?? SAFE_LIST_LIMIT,
       skip: offset,
     });
   }

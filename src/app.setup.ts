@@ -32,14 +32,19 @@ export function configureApp(app: INestApplication): void {
   app.useGlobalFilters(new HttpExceptionFilter());
   app.useGlobalInterceptors(new LoggingInterceptor());
 
-  const swaggerConfig = new DocumentBuilder()
-    .setTitle('Eventos Café Bugado — Public API')
-    .setDescription(
-      'API pública read-only de eventos, consumida pelo frontend agendas_eventos. ' +
-        'Independente do backendeventos (FastAPI); lê do mesmo Postgres com uma role somente-leitura.',
-    )
-    .setVersion('1.0')
-    .build();
-  const document = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup('docs', app, document);
+  // Swagger documenta schema/endpoints em detalhe — não vaza segredo (API já
+  // é 100% pública), mas facilita reconhecimento de superfície de ataque.
+  // Fica disponível em dev/test, desabilitado em produção.
+  if (process.env.NODE_ENV !== 'production') {
+    const swaggerConfig = new DocumentBuilder()
+      .setTitle('Eventos Café Bugado — Public API')
+      .setDescription(
+        'API pública read-only de eventos, consumida pelo frontend agendas_eventos. ' +
+          'Independente do backendeventos (FastAPI); lê do mesmo Postgres com uma role somente-leitura.',
+      )
+      .setVersion('1.0')
+      .build();
+    const document = SwaggerModule.createDocument(app, swaggerConfig);
+    SwaggerModule.setup('docs', app, document);
+  }
 }

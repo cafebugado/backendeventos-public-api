@@ -1,9 +1,10 @@
 import { mockDeep } from 'jest-mock-extended';
+import { SAFE_LIST_LIMIT } from '../../../common/constants/pagination';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { PrismaEventoRepository } from './prisma-evento.repository';
 
 describe('PrismaEventoRepository', () => {
-  it('busca eventos com status publicado, ordenados por created_at desc, sem limit/offset', async () => {
+  it('busca eventos com status publicado, ordenados por created_at desc, com o teto de segurança quando limit é omitido', async () => {
     const prisma = mockDeep<PrismaService>();
     prisma.evento.findMany.mockResolvedValue([]);
     const repo = new PrismaEventoRepository(prisma);
@@ -14,7 +15,7 @@ describe('PrismaEventoRepository', () => {
     expect(prisma.evento.findMany).toHaveBeenCalledWith({
       where: { status: 'publicado' },
       orderBy: { created_at: 'desc' },
-      take: undefined,
+      take: SAFE_LIST_LIMIT,
       skip: undefined,
     });
   });
@@ -49,7 +50,7 @@ describe('PrismaEventoRepository', () => {
         cidade: { equals: 'São Paulo', mode: 'insensitive' },
       },
       orderBy: { created_at: 'desc' },
-      take: undefined,
+      take: SAFE_LIST_LIMIT,
       skip: undefined,
     });
   });
@@ -68,7 +69,7 @@ describe('PrismaEventoRepository', () => {
         modalidade: { equals: 'Online', mode: 'insensitive' },
       },
       orderBy: { created_at: 'desc' },
-      take: undefined,
+      take: SAFE_LIST_LIMIT,
       skip: undefined,
     });
   });

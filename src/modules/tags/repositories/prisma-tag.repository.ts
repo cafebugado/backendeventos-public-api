@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Tag } from '@prisma/client';
+import { SAFE_LIST_LIMIT } from '../../../common/constants/pagination';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { ITagRepository } from './tag.repository.interface';
 
@@ -10,6 +11,7 @@ export class PrismaTagRepository implements ITagRepository {
   findAll(): Promise<Tag[]> {
     return this.prisma.tag.findMany({
       orderBy: { nome: 'asc' },
+      take: SAFE_LIST_LIMIT,
     });
   }
 

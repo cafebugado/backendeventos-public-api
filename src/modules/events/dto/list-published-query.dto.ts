@@ -14,7 +14,7 @@ export class ListPublishedQueryDto {
     minimum: 1,
     maximum: 100,
     description:
-      'Se omitido, retorna todos os eventos publicados (sem paginação).',
+      'Se omitido, retorna até 100 eventos publicados (teto de segurança).',
   })
   @IsOptional()
   @Type(() => Number)
