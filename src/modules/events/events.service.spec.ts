@@ -80,6 +80,7 @@ describe('EventsService', () => {
       findPublished: jest.fn(),
       findFeatured: jest.fn(),
       findBySlugOrId: jest.fn(),
+      countPublished: jest.fn(),
     };
     const tagRepo: jest.Mocked<ITagRepository> = {
       findAll: jest.fn(),
@@ -572,6 +573,24 @@ describe('EventsService', () => {
       const result = await service.getRecommended('current', 0);
 
       expect(result).toHaveLength(1);
+    });
+  });
+
+  describe('getStats', () => {
+    it('repassa o total resolvido pelo repositório no DTO', async () => {
+      const { service, repo } = createService();
+      repo.countPublished.mockResolvedValue(42);
+
+      const result = await service.getStats();
+
+      expect(result).toEqual({ totalEventos: 42 });
+    });
+
+    it('retorna zero sem erro quando não há eventos publicados', async () => {
+      const { service, repo } = createService();
+      repo.countPublished.mockResolvedValue(0);
+
+      await expect(service.getStats()).resolves.toEqual({ totalEventos: 0 });
     });
   });
 });

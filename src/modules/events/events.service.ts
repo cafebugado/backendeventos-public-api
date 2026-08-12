@@ -2,6 +2,7 @@ import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { EventPublicResponseDto } from './dto/event-public-response.dto';
 import { EventFeaturedResponseDto } from './dto/event-featured-response.dto';
 import { EventDetailResponseDto } from './dto/event-detail-response.dto';
+import { EventStatsResponseDto } from './dto/event-stats-response.dto';
 import { EVENTO_REPOSITORY } from './repositories/evento.repository.interface';
 import type {
   FindPublishedFilters,
@@ -159,5 +160,12 @@ export class EventsService {
     return candidates
       .slice(0, safeLimit)
       .map(({ evento }) => EventFeaturedResponseDto.fromEntity(evento));
+  }
+
+  async getStats(): Promise<EventStatsResponseDto> {
+    const totalEventos = await this.eventoRepository.countPublished();
+    const dto = new EventStatsResponseDto();
+    dto.totalEventos = totalEventos;
+    return dto;
   }
 }

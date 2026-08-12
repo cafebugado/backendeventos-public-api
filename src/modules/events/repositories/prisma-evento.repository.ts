@@ -57,4 +57,8 @@ export class PrismaEventoRepository implements IEventoRepository {
       },
     });
   }
+
+  countPublished(): Promise<number> {
+    return this.prisma.evento.count({ where: { status: 'publicado' } });
+  }
 }

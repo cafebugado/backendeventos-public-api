@@ -225,4 +225,27 @@ describe('PrismaEventoRepository', () => {
       );
     });
   });
+
+  describe('countPublished', () => {
+    it('conta eventos com status publicado', async () => {
+      const prisma = mockDeep<PrismaService>();
+      prisma.evento.count.mockResolvedValue(0);
+      const repo = new PrismaEventoRepository(prisma);
+
+      await repo.countPublished();
+
+      // eslint-disable-next-line @typescript-eslint/unbound-method -- mock do jest-mock-extended, não chamada de método real
+      expect(prisma.evento.count).toHaveBeenCalledWith({
+        where: { status: 'publicado' },
+      });
+    });
+
+    it('retorna o total resolvido pelo Prisma', async () => {
+      const prisma = mockDeep<PrismaService>();
+      prisma.evento.count.mockResolvedValue(42);
+      const repo = new PrismaEventoRepository(prisma);
+
+      await expect(repo.countPublished()).resolves.toBe(42);
+    });
+  });
 });

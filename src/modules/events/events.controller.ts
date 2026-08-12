@@ -10,6 +10,7 @@ import { ParseOptionalIntPipe } from '../../common/pipes/parse-optional-int.pipe
 import { EventPublicResponseDto } from './dto/event-public-response.dto';
 import { EventFeaturedResponseDto } from './dto/event-featured-response.dto';
 import { EventDetailResponseDto } from './dto/event-detail-response.dto';
+import { EventStatsResponseDto } from './dto/event-stats-response.dto';
 import { ListPublishedQueryDto } from './dto/list-published-query.dto';
 import { ListFeaturedQueryDto } from './dto/list-featured-query.dto';
 import { TagResponseDto } from '../tags/dto/tag-response.dto';
@@ -60,6 +61,12 @@ export class EventsController {
     @Param('slugOrId') slugOrId: string,
   ): Promise<EventDetailResponseDto> {
     return this.eventsService.getDetailBySlugOrId(slugOrId);
+  }
+
+  @Get('stats/public')
+  @ApiOkResponse({ type: EventStatsResponseDto })
+  findStats(): Promise<EventStatsResponseDto> {
+    return this.eventsService.getStats();
   }
 
   @Get(':eventoId/tags')

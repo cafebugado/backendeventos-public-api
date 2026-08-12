@@ -15,6 +15,7 @@ describe('EventsController', () => {
         | 'getEventTags'
         | 'getRecommended'
         | 'getDetailBySlugOrId'
+        | 'getStats'
       >
     >;
   } {
@@ -27,6 +28,7 @@ describe('EventsController', () => {
         | 'getEventTags'
         | 'getRecommended'
         | 'getDetailBySlugOrId'
+        | 'getStats'
       >
     > = {
       getPublished: jest.fn(),
@@ -35,6 +37,7 @@ describe('EventsController', () => {
       getEventTags: jest.fn(),
       getRecommended: jest.fn(),
       getDetailBySlugOrId: jest.fn(),
+      getStats: jest.fn(),
     };
     const controller = new EventsController(
       service as unknown as EventsService,
@@ -166,5 +169,14 @@ describe('EventsController', () => {
     await expect(
       controller.findDetailBySlugOrId('meetup-cafe-bugado'),
     ).resolves.toBe(dto);
+  });
+
+  it('retorna o DTO resolvido pelo EventsService.getStats', async () => {
+    const { controller, service } = createController();
+    const dto = { totalEventos: 42 } as never;
+    service.getStats.mockResolvedValue(dto);
+
+    await expect(controller.findStats()).resolves.toBe(dto);
+    expect(service.getStats).toHaveBeenCalledWith();
   });
 });
