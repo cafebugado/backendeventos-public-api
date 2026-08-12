@@ -105,9 +105,15 @@ rodam completos sem exigir conexão real ao Supabase.
 | `GET` | `/events/published` | Eventos com `status = 'publicado'`, ordenados por `created_at DESC`. Aceita `?limit=1-100`, `?offset=>=0`, `?cidade=` e `?modalidade=` (ambos case-insensitive), todos opcionais e combináveis. DTO completo (16 campos de apresentação + metadados). |
 | `GET` | `/events/featured` | Os últimos eventos cadastrados (`status = 'publicado'`, ordenados por `created_at DESC`). Aceita `?limit=1-10`, default `3`. DTO **enxuto** — só `id, slug, nome, descricao, data_evento, horario, imagem, created_at`, os únicos campos que o card de destaque da home (`E:\agendas_eventos`) lê. Feito pra ser o mais rápido possível: usa `select` do Prisma pra não trazer colunas que não vão ser usadas. |
 | `GET` | `/events/slug/:slugOrId` | Busca um evento único por `slug` **ou** `id` (UUID), com `status = 'publicado'`. 404 se não existir ou não estiver publicado. DTO completo, igual ao de `/events/published`. Alimenta a página de detalhe (`/eventos/[slug]`) do frontend. |
+| `GET` | `/events/slug/:slugOrId/detail` | Endpoint agregado: evento (mesmo DTO de `/events/slug/:slugOrId`) + tags num único payload `{ evento, tags }`, evitando 2 round-trips sequenciais na página de detalhe. Falha isolada no lookup de tags não derruba a resposta (retorna `tags: []` e loga). Não substitui os endpoints individuais. |
+| `GET` | `/events/:eventoId/tags` | Tags de um evento específico. 404 se o evento não existir ou não estiver publicado (mesmo padrão de `/events/slug/:slugOrId`). |
+| `GET` | `/events/:id/recommended` | Até `?limit=1-10` (default `3`) eventos publicados e futuros, excluindo o próprio, ordenados por `(tag em comum, mesma semana ISO, dias até o evento)`. DTO enxuto, igual ao de `/events/featured`. |
+| `GET` | `/tags` | Todas as tags, ordenadas por `nome` (`id, nome, cor`). |
+| `GET` | `/events/tags-map` | Objeto `{ [eventoId]: Tag[] }` só para eventos publicados — usado pela Home, `/eventos` e `/favoritos` do frontend pra não precisar de 1 chamada por evento. |
+| `GET` | `/contributors` | Todos os contribuidores, ordenados por `nome` (`id, nome, avatar_url, github_url, linkedin_url, portfolio_url`). Omite `github_username`/`created_at`/`updated_at` — existem na tabela, mas nenhum consumidor do frontend lê. |
 
-Veja `SPRINT.md` para o roadmap completo (sprints 2–6: tags, upcoming, estatísticas,
-contribuidores, galeria, recomendados).
+Veja `SPRINT.md` para o roadmap completo (Sprint 5: galeria, ainda bloqueado por um GRANT
+manual de `auth.*` na role somente-leitura).
 
 ## Independência de `D:\backendeventos`
 
