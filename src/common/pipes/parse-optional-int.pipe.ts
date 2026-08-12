@@ -1,10 +1,9 @@
 import { BadRequestException, Injectable, PipeTransform } from '@nestjs/common';
 
 /**
- * Reservado para endpoints futuros com um único query param inteiro opcional
- * sem um DTO completo (ex.: /events/upcoming?limit=, /events/{id}/recommended?limit=
- * — sprints 3 e 6). Não é usado em /events/published, que valida limit/offset via
- * ListPublishedQueryDto.
+ * Valida um único query param inteiro opcional sem precisar de um DTO
+ * completo. Em uso em GET /events/:id/recommended?limit= (events.controller.ts).
+ * /events/published valida limit/offset via ListPublishedQueryDto, não este pipe.
  */
 @Injectable()
 export class ParseOptionalIntPipe implements PipeTransform<
