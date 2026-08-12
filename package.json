@@ -139,6 +139,26 @@
         "statements": 80,
         "functions": 80,
         "lines": 80
+      },
+      "src/modules/gallery/gallery.controller.ts": {
+        "statements": 80,
+        "functions": 80,
+        "lines": 80
+      },
+      "src/modules/gallery/gallery.service.ts": {
+        "statements": 80,
+        "functions": 80,
+        "lines": 80
+      },
+      "src/modules/gallery/dto/**/*.ts": {
+        "statements": 80,
+        "functions": 80,
+        "lines": 80
+      },
+      "src/modules/gallery/repositories/**/*.ts": {
+        "statements": 80,
+        "functions": 80,
+        "lines": 80
       }
     }
   }

@@ -54,6 +54,7 @@ model Evento {
   created_at    DateTime @default(now()) @db.Timestamptz(6)
   updated_at    DateTime @default(now()) @db.Timestamptz(6)
   eventoTags    EventoTag[]
+  galeriaAlbum  GaleriaAlbum?
 
   @@index([data_evento])
   @@index([status])
@@ -122,4 +123,66 @@ model Contribuinte {
   updated_at      DateTime? @default(now()) @db.Timestamptz(6)
 
   @@map("contribuintes")
+}
+
+/// Modelos da Sprint 5 (galeria) — colunas validadas contra a tabela real via
+/// `information_schema.columns` + `pg_constraint` usando DIRECT_URL (2026-08-12). FKs
+/// físicas reais confirmadas: `galeria_albuns.evento_id → eventos` (SET NULL),
+/// `galeria_albuns.comunidade_id → comunidades` (SET NULL), `galeria_fotos.album_id →
+/// galeria_albuns` (CASCADE). `created_by`/`uploaded_by`/`comunidades.created_by` também
+/// têm FK física real pra `auth.users`, mas não são modeladas como @relation aqui — mesmo
+/// tratamento de "FK lógica" já usado em `Evento.created_by`/`Tag.created_by`: resolvidas
+/// por nome via `UserProfile`, nunca expostas cruas na API pública.
+model GaleriaAlbum {
+  id            String        @id @default(uuid()) @db.Uuid
+  evento_id     String?       @unique @db.Uuid
+  comunidade_id String?       @db.Uuid
+  created_by    String?       @db.Uuid
+  created_at    DateTime?     @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime?     @default(now()) @db.Timestamptz(6)
+  evento        Evento?       @relation(fields: [evento_id], references: [id], onDelete: SetNull)
+  comunidade    Comunidade?   @relation(fields: [comunidade_id], references: [id], onDelete: SetNull)
+  fotos         GaleriaFoto[]
+
+  @@index([comunidade_id])
+  @@index([created_by])
+  @@map("galeria_albuns")
+}
+
+model GaleriaFoto {
+  id           String       @id @default(uuid()) @db.Uuid
+  album_id     String       @db.Uuid
+  url          String       @db.Text
+  storage_path String?      @db.Text
+  legenda      String?      @db.Text
+  ordem        Int?         @default(0)
+  uploaded_by  String?      @db.Uuid
+  created_at   DateTime?    @default(now()) @db.Timestamptz(6)
+  album        GaleriaAlbum @relation(fields: [album_id], references: [id], onDelete: Cascade)
+
+  @@index([album_id])
+  @@index([uploaded_by])
+  @@map("galeria_fotos")
+}
+
+model Comunidade {
+  id         String         @id @default(uuid()) @db.Uuid
+  nome       String         @db.Text
+  created_by String?        @db.Uuid
+  created_at DateTime?      @default(now()) @db.Timestamptz(6)
+  updated_at DateTime?      @default(now()) @db.Timestamptz(6)
+  albuns     GaleriaAlbum[]
+
+  @@map("comunidades")
+}
+
+/// Só as 3 colunas realmente lidas pela galeria — a tabela real tem bem mais campos de
+/// perfil (github_username, avatar_url, whatsapp, bio, data_nascimento, etc.), nenhum
+/// modelado aqui de propósito: reduz superfície exposta e mantém o Prisma Client enxuto.
+model UserProfile {
+  user_id   String  @id @db.Uuid
+  nome      String? @db.Text
+  sobrenome String? @db.Text
+
+  @@map("user_profiles")
 }

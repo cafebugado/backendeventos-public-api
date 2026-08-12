@@ -9,6 +9,7 @@ import { HealthModule } from './modules/health/health.module';
 import { EventsModule } from './modules/events/events.module';
 import { TagsModule } from './modules/tags/tags.module';
 import { ContributorsModule } from './modules/contributors/contributors.module';
+import { GalleryModule } from './modules/gallery/gallery.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { ContributorsModule } from './modules/contributors/contributors.module';
     EventsModule,
     TagsModule,
     ContributorsModule,
+    GalleryModule,
   ],
   providers: [
     {

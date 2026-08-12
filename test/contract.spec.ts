@@ -5,6 +5,7 @@ import { DeepMockProxy } from 'jest-mock-extended';
 import request from 'supertest';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { createTestApp } from './test-app.helper';
+import { GaleriaAlbumWithRelations } from '../src/modules/gallery/repositories/gallery.repository.interface';
 
 type EventResponseBody = Record<string, unknown>;
 
@@ -366,6 +367,101 @@ describe('Contrato de resposta — GET /contributors', () => {
 
     CONTRIBUTOR_FORBIDDEN_KEYS.forEach((key) => {
       expect(first).not.toHaveProperty(key);
+    });
+  });
+});
+
+const GALLERY_ALBUM_CONTRACT_KEYS = [
+  'id',
+  'evento_nome',
+  'evento_data',
+  'comunidade_nome',
+  'created_by_nome',
+  'created_at',
+  'fotos',
+];
+const GALLERY_FOTO_CONTRACT_KEYS = [
+  'id',
+  'url',
+  'legenda',
+  'ordem',
+  'uploaded_by_nome',
+  'created_at',
+];
+const GALLERY_ALBUM_FORBIDDEN_KEYS = [
+  'evento_id',
+  'comunidade_id',
+  'created_by',
+];
+const GALLERY_FOTO_FORBIDDEN_KEYS = ['album_id', 'uploaded_by', 'storage_path'];
+
+function buildGaleriaAlbumRow(): GaleriaAlbumWithRelations {
+  return {
+    id: '77777777-7777-7777-7777-777777777777',
+    created_at: new Date('2026-02-10T00:00:00.000Z'),
+    created_by: '88888888-8888-8888-8888-888888888888',
+    evento: { nome: 'Meetup Café Bugado', data_evento: '10/02/2026' },
+    comunidade: { nome: 'Café Bugado' },
+    fotos: [
+      {
+        id: '99999999-9999-9999-9999-999999999999',
+        url: 'https://example.com/foto1.png',
+        legenda: 'Galera do meetup',
+        ordem: 0,
+        uploaded_by: '88888888-8888-8888-8888-888888888888',
+        created_at: new Date('2026-02-10T01:00:00.000Z'),
+      },
+    ],
+  };
+}
+
+describe('Contrato de resposta — GET /gallery/albums/public', () => {
+  let app: INestApplication;
+  let server: Server;
+  let prisma: DeepMockProxy<PrismaService>;
+
+  beforeAll(async () => {
+    ({ app, server, prisma } = await createTestApp());
+
+    prisma.galeriaAlbum.findMany.mockResolvedValue([
+      buildGaleriaAlbumRow(),
+    ] as never);
+    prisma.userProfile.findMany.mockResolvedValue([
+      {
+        user_id: '88888888-8888-8888-8888-888888888888',
+        nome: 'Alice',
+        sobrenome: 'Souza',
+      },
+    ] as never);
+  });
+
+  afterAll(async () => {
+    await app.close();
+  });
+
+  it('bate exatamente com o contrato documentado (álbum e fotos)', async () => {
+    const response = await request(server).get('/gallery/albums/public');
+    const [first] = response.body as EventResponseBody[];
+
+    expect(Object.keys(first).sort()).toEqual(
+      [...GALLERY_ALBUM_CONTRACT_KEYS].sort(),
+    );
+    const fotos = first.fotos as EventResponseBody[];
+    expect(Object.keys(fotos[0]).sort()).toEqual(
+      [...GALLERY_FOTO_CONTRACT_KEYS].sort(),
+    );
+  });
+
+  it('nunca vaza evento_id/comunidade_id/created_by no álbum nem album_id/uploaded_by/storage_path na foto', async () => {
+    const response = await request(server).get('/gallery/albums/public');
+    const [first] = response.body as EventResponseBody[];
+    const fotos = first.fotos as EventResponseBody[];
+
+    GALLERY_ALBUM_FORBIDDEN_KEYS.forEach((key) => {
+      expect(first).not.toHaveProperty(key);
+    });
+    GALLERY_FOTO_FORBIDDEN_KEYS.forEach((key) => {
+      expect(fotos[0]).not.toHaveProperty(key);
     });
   });
 });
