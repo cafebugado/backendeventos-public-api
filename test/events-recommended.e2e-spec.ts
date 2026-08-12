@@ -1,12 +1,10 @@
 import type { Server } from 'node:http';
 import { INestApplication } from '@nestjs/common';
-import { Test } from '@nestjs/testing';
 import { Evento } from '@prisma/client';
-import { DeepMockProxy, mockDeep } from 'jest-mock-extended';
+import { DeepMockProxy } from 'jest-mock-extended';
 import request from 'supertest';
-import { AppModule } from '../src/app.module';
-import { configureApp } from '../src/app.setup';
 import { PrismaService } from '../src/prisma/prisma.service';
+import { createTestApp } from './test-app.helper';
 
 type ResponseBody = Record<string, unknown>;
 
@@ -53,19 +51,7 @@ describe('GET /events/:id/recommended (e2e)', () => {
   let prisma: DeepMockProxy<PrismaService>;
 
   beforeAll(async () => {
-    prisma = mockDeep<PrismaService>();
-
-    const moduleRef = await Test.createTestingModule({
-      imports: [AppModule],
-    })
-      .overrideProvider(PrismaService)
-      .useValue(prisma)
-      .compile();
-
-    app = moduleRef.createNestApplication();
-    configureApp(app);
-    await app.init();
-    server = app.getHttpServer() as Server;
+    ({ app, server, prisma } = await createTestApp());
   });
 
   afterAll(async () => {
