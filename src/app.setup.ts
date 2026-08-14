@@ -1,12 +1,10 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import compression from 'compression';
 import type { Application } from 'express';
 import helmet from 'helmet';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
-import type { RootConfig } from './config/configuration';
 
 /**
  * Configuração compartilhada entre main.ts (produção) e os testes e2e — extraída
@@ -14,8 +12,6 @@ import type { RootConfig } from './config/configuration';
  * Swagger da aplicação real, e não apenas o AppModule "nu".
  */
 export function configureApp(app: INestApplication): void {
-  const configService = app.get(ConfigService<RootConfig>);
-
   // Sem isso, req.ip é sempre o IP do load balancer da hospedagem (não o do
   // cliente real), e o ThrottlerGuard (ver AppModule) passa a limitar a API
   // inteira em vez de por cliente — 1 confia só no hop imediato à frente
@@ -25,8 +21,15 @@ export function configureApp(app: INestApplication): void {
 
   app.use(helmet());
   app.use(compression());
+  // TEMPORÁRIO (diagnóstico): CORS liberado pra qualquer origem enquanto
+  // investigamos por que dados não aparecem em produção. API já é 100%
+  // pública/somente-leitura, sem cookies/credenciais — liberar geral não
+  // expõe nada que um cliente qualquer não conseguisse já pegar direto.
+  // Reverter pra `origin: configService.get('app.corsOrigins', { infer: true })`
+  // (reintroduzindo o ConfigService<RootConfig>, ver histórico do git) depois
+  // de confirmar (ou descartar) essa hipótese.
   app.enableCors({
-    origin: configService.get('app.corsOrigins', { infer: true }),
+    origin: true,
   });
 
   app.useGlobalPipes(
