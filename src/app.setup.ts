@@ -2,6 +2,7 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import compression from 'compression';
+import type { Application } from 'express';
 import helmet from 'helmet';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
@@ -14,6 +15,13 @@ import type { RootConfig } from './config/configuration';
  */
 export function configureApp(app: INestApplication): void {
   const configService = app.get(ConfigService<RootConfig>);
+
+  // Sem isso, req.ip é sempre o IP do load balancer da hospedagem (não o do
+  // cliente real), e o ThrottlerGuard (ver AppModule) passa a limitar a API
+  // inteira em vez de por cliente — 1 confia só no hop imediato à frente
+  // (o proxy da hospedagem), evitando que X-Forwarded-For seja spoofável
+  // por um cliente mal-intencionado mais além na cadeia.
+  (app.getHttpAdapter().getInstance() as Application).set('trust proxy', 1);
 
   app.use(helmet());
   app.use(compression());
