@@ -9,6 +9,14 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { createSwaggerBasicAuthMiddleware } from './common/middleware/swagger-basic-auth.middleware';
 import type { RootConfig } from './config/configuration';
 
+// Precisa bater com a versão de swagger-ui-dist que o @nestjs/swagger instalado
+// usa internamente (node_modules/@nestjs/swagger/package.json). Servida via CDN
+// em vez de estática local porque a Vercel (serverless) não serve os assets
+// estáticos do Swagger UI corretamente — /docs carregava, mas
+// swagger-ui-bundle.js/swagger-ui.css davam 404 e a página ficava em branco.
+const SWAGGER_UI_VERSION = '5.32.8';
+const SWAGGER_UI_CDN_BASE = `https://cdn.jsdelivr.net/npm/swagger-ui-dist@${SWAGGER_UI_VERSION}`;
+
 /**
  * Configuração compartilhada entre main.ts (produção) e os testes e2e — extraída
  * para que o TestingModule aplique exatamente o mesmo Helmet/CORS/ValidationPipe/
@@ -24,7 +32,20 @@ export function configureApp(app: INestApplication): void {
   // por um cliente mal-intencionado mais além na cadeia.
   (app.getHttpAdapter().getInstance() as Application).set('trust proxy', 1);
 
-  app.use(helmet());
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+          // Libera só o jsdelivr (CDN do swagger-ui-dist) — ver comentário do
+          // SWAGGER_UI_CDN_BASE acima. Resto do CSP continua no default do
+          // Helmet (bem restrito).
+          'script-src': ["'self'", SWAGGER_UI_CDN_BASE],
+          'img-src': ["'self'", 'data:', SWAGGER_UI_CDN_BASE],
+        },
+      },
+    }),
+  );
   app.use(compression());
   app.enableCors({
     origin: configService.get('app.corsOrigins', { infer: true }),
@@ -68,5 +89,12 @@ export function configureApp(app: INestApplication): void {
     .setVersion('1.0')
     .build();
   const document = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup('docs', app, document);
+  SwaggerModule.setup('docs', app, document, {
+    customCssUrl: `${SWAGGER_UI_CDN_BASE}/swagger-ui.css`,
+    customJs: [
+      `${SWAGGER_UI_CDN_BASE}/swagger-ui-bundle.js`,
+      `${SWAGGER_UI_CDN_BASE}/swagger-ui-standalone-preset.js`,
+    ],
+    customfavIcon: `${SWAGGER_UI_CDN_BASE}/favicon-32x32.png`,
+  });
 }
