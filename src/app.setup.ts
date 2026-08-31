@@ -6,6 +6,7 @@ import type { Application } from 'express';
 import helmet from 'helmet';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
+import { createSwaggerBasicAuthMiddleware } from './common/middleware/swagger-basic-auth.middleware';
 import type { RootConfig } from './config/configuration';
 
 /**
@@ -40,19 +41,32 @@ export function configureApp(app: INestApplication): void {
   app.useGlobalFilters(new HttpExceptionFilter());
   app.useGlobalInterceptors(new LoggingInterceptor());
 
-  // Swagger documenta schema/endpoints em detalhe — não vaza segredo (API já
-  // é 100% pública), mas facilita reconhecimento de superfície de ataque.
-  // Fica disponível em dev/test, desabilitado em produção.
-  if (process.env.NODE_ENV !== 'production') {
-    const swaggerConfig = new DocumentBuilder()
-      .setTitle('Eventos Café Bugado — Public API')
-      .setDescription(
-        'API pública read-only de eventos, consumida pelo frontend agendas_eventos. ' +
-          'Independente do backendeventos (FastAPI); lê do mesmo Postgres com uma role somente-leitura.',
-      )
-      .setVersion('1.0')
-      .build();
-    const document = SwaggerModule.createDocument(app, swaggerConfig);
-    SwaggerModule.setup('docs', app, document);
+  // Swagger fica disponível em qualquer ambiente (incluindo produção) — o
+  // time precisa acessar /docs em produção pra conferir a API real. Se
+  // SWAGGER_USER e SWAGGER_PASSWORD estiverem configuradas, a rota exige
+  // HTTP Basic Auth; se não estiverem, fica aberta (mesmo comportamento de
+  // antes em dev/test). A checagem de auth precisa ser registrada ANTES do
+  // SwaggerModule.setup(), já que o Express processa middlewares na ordem
+  // em que foram registrados para um mesmo path.
+  const swaggerUser = configService.get('app.swaggerUser', { infer: true });
+  const swaggerPassword = configService.get('app.swaggerPassword', {
+    infer: true,
+  });
+  if (swaggerUser && swaggerPassword) {
+    app.use(
+      ['/docs', '/docs-json'],
+      createSwaggerBasicAuthMiddleware(swaggerUser, swaggerPassword),
+    );
   }
+
+  const swaggerConfig = new DocumentBuilder()
+    .setTitle('Eventos Café Bugado — Public API')
+    .setDescription(
+      'API pública read-only de eventos, consumida pelo frontend agendas_eventos. ' +
+        'Independente do backendeventos (FastAPI); lê do mesmo Postgres com uma role somente-leitura.',
+    )
+    .setVersion('1.0')
+    .build();
+  const document = SwaggerModule.createDocument(app, swaggerConfig);
+  SwaggerModule.setup('docs', app, document);
 }
