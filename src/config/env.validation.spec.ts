@@ -38,4 +38,28 @@ describe('validate (env.validation)', () => {
   it('lança erro quando PORT não é um inteiro', () => {
     expect(() => validate({ ...VALID_BASE, PORT: 'abc' })).toThrow();
   });
+
+  it('aceita configuração sem SWAGGER_USER/SWAGGER_PASSWORD (opcionais)', () => {
+    const result = validate({ ...VALID_BASE });
+
+    expect(result.SWAGGER_USER).toBeUndefined();
+    expect(result.SWAGGER_PASSWORD).toBeUndefined();
+  });
+
+  it('aceita SWAGGER_USER e SWAGGER_PASSWORD quando informadas', () => {
+    const result = validate({
+      ...VALID_BASE,
+      SWAGGER_USER: 'admin',
+      SWAGGER_PASSWORD: 'segredo',
+    });
+
+    expect(result.SWAGGER_USER).toBe('admin');
+    expect(result.SWAGGER_PASSWORD).toBe('segredo');
+  });
+
+  it('lança erro quando SWAGGER_USER está vazia', () => {
+    expect(() => validate({ ...VALID_BASE, SWAGGER_USER: '' })).toThrow(
+      /Variáveis de ambiente inválidas/,
+    );
+  });
 });

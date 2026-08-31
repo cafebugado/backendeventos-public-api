@@ -25,6 +25,19 @@ class EnvironmentVariables {
   @IsString()
   @IsNotEmpty()
   DIRECT_URL!: string;
+
+  // Ambas opcionais: se as duas estiverem definidas, /docs e /docs-json
+  // exigem HTTP Basic Auth. Se qualquer uma faltar, a documentação fica
+  // aberta (comportamento atual, mantido como default).
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  SWAGGER_USER?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  SWAGGER_PASSWORD?: string;
 }
 
 export function validate(

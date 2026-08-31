@@ -1,6 +1,8 @@
 export interface AppConfig {
   port: number;
   corsOrigins: string[];
+  swaggerUser?: string;
+  swaggerPassword?: string;
 }
 
 export interface RootConfig {
@@ -18,5 +20,7 @@ export default (): RootConfig => ({
       .split(',')
       .map((origin) => origin.trim().replace(/\/+$/, ''))
       .filter(Boolean),
+    swaggerUser: process.env.SWAGGER_USER,
+    swaggerPassword: process.env.SWAGGER_PASSWORD,
   },
 });

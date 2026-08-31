@@ -56,4 +56,20 @@ describe('configuration', () => {
       'http://localhost:3000',
     ]);
   });
+
+  it('swaggerUser/swaggerPassword ficam undefined quando as env vars não estão definidas', () => {
+    delete process.env.SWAGGER_USER;
+    delete process.env.SWAGGER_PASSWORD;
+
+    expect(configuration().app.swaggerUser).toBeUndefined();
+    expect(configuration().app.swaggerPassword).toBeUndefined();
+  });
+
+  it('lê swaggerUser/swaggerPassword das env vars quando definidas', () => {
+    process.env.SWAGGER_USER = 'admin';
+    process.env.SWAGGER_PASSWORD = 'segredo';
+
+    expect(configuration().app.swaggerUser).toBe('admin');
+    expect(configuration().app.swaggerPassword).toBe('segredo');
+  });
 });
