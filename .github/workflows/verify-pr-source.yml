@@ -1,0 +1,34 @@
+name: Verify PR Source Branch
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+    branches:
+      - production
+
+permissions:
+  contents: read
+
+jobs:
+  verify-pr-source:
+    name: verify-pr-source
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate that PR into production comes from development or hotfix/*
+        shell: bash
+        run: |
+          HEAD_REF="${{ github.head_ref }}"
+          echo "Branch de origem do PR: '$HEAD_REF'"
+
+          if [ "$HEAD_REF" = "development" ]; then
+            echo "OK: PR vem de 'development'."
+            exit 0
+          fi
+
+          if [[ "$HEAD_REF" =~ ^hotfix/ ]]; then
+            echo "OK: PR vem de uma branch de hotfix ('$HEAD_REF')."
+            exit 0
+          fi
+
+          echo "::error::PRs para 'production' só podem ter origem em 'development' ou em uma branch 'hotfix/*'. Branch de origem detectada: '$HEAD_REF'. Abra o PR a partir de 'development' (ou crie uma branch 'hotfix/<algo>' para emergências)."
+          exit 1

@@ -1,0 +1,115 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - production
+      - development
+  push:
+    branches:
+      - production
+      - development
+
+permissions:
+  contents: read
+
+# Cancela execuções antigas do mesmo PR/branch quando um novo push chega —
+# evita gastar minutos de CI rodando um commit que já foi substituído.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Não precisa de DATABASE_URL/DIRECT_URL: no Prisma 6.x o `generate` só
+      # lê o schema.prisma, não valida nem resolve as env vars do datasource.
+      # (Isso mudou no Prisma 7 — não se aplica aqui, o projeto está fixado em 6.19.3.)
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      - name: Run ESLint (no --fix)
+        run: npm run lint:check
+
+  build:
+    name: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      - name: Build
+        run: npm run build
+
+  unit-tests:
+    name: unit-tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      # test:cov já tem os coverageThreshold (80%) hardcoded no package.json
+      # para events/tags/contributors/gallery — o próprio `jest --coverage`
+      # falha (exit code != 0) se ficar abaixo disso, sem precisar de nada extra aqui.
+      - name: Run unit tests with coverage
+        run: npm run test:cov
+
+  e2e-tests:
+    name: e2e-tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      - name: Run e2e tests
+        run: npm run test:e2e
