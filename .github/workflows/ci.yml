@@ -95,6 +95,16 @@ jobs:
   e2e-tests:
     name: e2e-tests
     runs-on: ubuntu-latest
+    # Os e2e-specs sobem o AppModule inteiro via TestingModule (ver
+    # test/test-app.helper.ts), o que dispara a validação de env do
+    # ConfigModule.forRoot() antes mesmo de qualquer mock do Prisma entrar em
+    # ação. Não existe .env no runner (é gitignorado, nunca commitado), então
+    # precisamos de valores fake aqui — a conexão real nunca é aberta, o
+    # PrismaService é sempre sobrescrito por um mock nos testes e2e.
+    env:
+      CORS_ORIGINS: 'http://localhost:3000'
+      DATABASE_URL: 'postgresql://user:password@localhost:5432/postgres'
+      DIRECT_URL: 'postgresql://user:password@localhost:5432/postgres'
     steps:
       - name: Checkout
         uses: actions/checkout@v7
