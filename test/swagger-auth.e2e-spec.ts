@@ -23,6 +23,27 @@ describe('Proteção do Swagger (/docs, /docs-json)', () => {
 
       expect(response.status).toBe(200);
     });
+
+    // Regressão: /docs carregava mas ficava em branco na Vercel porque os
+    // assets estáticos do swagger-ui-dist (bundle.js/css) davam 404 — o
+    // ambiente serverless não serve esses arquivos estáticos direito. Fix:
+    // servir via CDN (jsdelivr) em vez de estático local. Este teste trava
+    // que o HTML de /docs continua apontando pro CDN, não pra rota estática
+    // local que sabemos que quebra em produção.
+    it('referencia os assets do Swagger UI via CDN (jsdelivr), não estático local', async () => {
+      const response = await request(server).get('/docs');
+
+      expect(response.status).toBe(200);
+      expect(response.text).toContain('cdn.jsdelivr.net/npm/swagger-ui-dist');
+      expect(response.text).not.toContain('href="./swagger-ui.css"');
+    });
+
+    it('libera o CDN do swagger-ui-dist no Content-Security-Policy (script-src)', async () => {
+      const response = await request(server).get('/docs');
+
+      const csp = response.headers['content-security-policy'];
+      expect(csp).toContain("script-src 'self' https://cdn.jsdelivr.net");
+    });
   });
 
   describe('com SWAGGER_USER/SWAGGER_PASSWORD configuradas', () => {
