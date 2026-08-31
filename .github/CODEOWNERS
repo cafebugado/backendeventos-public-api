@@ -1,0 +1,19 @@
+# CODEOWNERS
+#
+# Define quem é solicitado automaticamente como revisor de uma PR. Com
+# "Require review from Code Owners" ativo na proteção da branch `production`,
+# o merge fica bloqueado até esse dono aprovar.
+#
+# Hoje há um único responsável pelo repositório inteiro. Quando o time
+# crescer, substitua a linha abaixo por regras mais específicas por pasta.
+# A regra que casar por ÚLTIMO no arquivo é a que vale para um dado caminho,
+# então deixe o padrão geral (`*`) no topo e as regras específicas depois, ex.:
+#
+#   *                       @darioreisjr
+#   /prisma/                @darioreisjr @dba-do-time
+#   /src/modules/events/    @darioreisjr @dev-events
+#   /.github/               @darioreisjr
+#
+# Sintaxe completa: https://docs.github.com/articles/about-code-owners
+
+* @darioreisjr
