@@ -8,6 +8,11 @@ import { GaleriaAlbumWithRelations } from '../src/modules/gallery/repositories/g
 
 type ResponseBody = Record<string, unknown>;
 
+// O mock abaixo representa a linha CRUA que sai de `prisma.galeriaAlbum.findMany`
+// (antes do filtro de moderação em PrismaGalleryRepository.findAlbumsPublic, que
+// olha `evento.status` e só então descarta esse campo). Por isso `evento` aqui
+// inclui `status`, embora `GaleriaAlbumWithRelations` (o tipo pós-transformação)
+// não tenha esse campo — daí o cast no retorno.
 function buildAlbumRow(
   overrides: Partial<GaleriaAlbumWithRelations> = {},
 ): GaleriaAlbumWithRelations {
@@ -15,7 +20,11 @@ function buildAlbumRow(
     id: '11111111-1111-1111-1111-111111111111',
     created_at: new Date('2026-02-10T00:00:00.000Z'),
     created_by: '22222222-2222-2222-2222-222222222222',
-    evento: { nome: 'Meetup Café Bugado', data_evento: '10/02/2026' },
+    evento: {
+      nome: 'Meetup Café Bugado',
+      data_evento: '10/02/2026',
+      status: 'publicado',
+    },
     comunidade: { nome: 'Café Bugado' },
     fotos: [
       {
@@ -28,7 +37,7 @@ function buildAlbumRow(
       },
     ],
     ...overrides,
-  };
+  } as unknown as GaleriaAlbumWithRelations;
 }
 
 function buildProfileRow() {

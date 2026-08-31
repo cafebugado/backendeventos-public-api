@@ -2,6 +2,7 @@ import type { Server } from 'node:http';
 import { INestApplication } from '@nestjs/common';
 import { DeepMockProxy } from 'jest-mock-extended';
 import request from 'supertest';
+import { SAFE_LIST_LIMIT } from '../src/common/constants/pagination';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { createTestApp } from './test-app.helper';
 
@@ -89,6 +90,7 @@ describe('GET /tags e GET /events/tags-map (e2e)', () => {
       // eslint-disable-next-line @typescript-eslint/unbound-method -- mock do jest-mock-extended
       expect(prisma.tag.findMany).toHaveBeenCalledWith({
         orderBy: { nome: 'asc' },
+        take: SAFE_LIST_LIMIT,
       });
     });
   });
