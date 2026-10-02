@@ -121,7 +121,7 @@ describe('GET /contributors (e2e)', () => {
     const response = await request(server).get('/contributors');
 
     expect(response.headers['cache-control']).toBe(
-      'public, max-age=30, stale-while-revalidate=120',
+      'public, max-age=300, stale-while-revalidate=3600',
     );
   });
 });
