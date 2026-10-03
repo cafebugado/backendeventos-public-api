@@ -66,7 +66,7 @@ describe('GET /tags e GET /events/tags-map (e2e)', () => {
       const response = await request(server).get('/tags');
 
       expect(response.headers['cache-control']).toBe(
-        'public, max-age=30, stale-while-revalidate=120',
+        'public, max-age=300, stale-while-revalidate=3600',
       );
     });
 
@@ -143,7 +143,7 @@ describe('GET /tags e GET /events/tags-map (e2e)', () => {
       const response = await request(server).get('/events/tags-map');
 
       expect(response.headers['cache-control']).toBe(
-        'public, max-age=30, stale-while-revalidate=120',
+        'public, max-age=300, stale-while-revalidate=3600',
       );
     });
   });

@@ -102,7 +102,7 @@ describe('GET /events/slug/:slugOrId (e2e)', () => {
     );
 
     expect(response.headers['cache-control']).toBe(
-      'public, max-age=30, stale-while-revalidate=120',
+      'public, max-age=60, stale-while-revalidate=300',
     );
   });
 
@@ -212,7 +212,7 @@ describe('GET /events/slug/:slugOrId/detail (e2e)', () => {
     );
 
     expect(response.headers['cache-control']).toBe(
-      'public, max-age=30, stale-while-revalidate=120',
+      'public, max-age=60, stale-while-revalidate=300',
     );
   });
 

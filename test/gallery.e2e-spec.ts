@@ -155,7 +155,7 @@ describe('GET /gallery/albums/public (e2e)', () => {
     const response = await request(server).get('/gallery/albums/public');
 
     expect(response.headers['cache-control']).toBe(
-      'public, max-age=30, stale-while-revalidate=120',
+      'public, max-age=300, stale-while-revalidate=3600',
     );
   });
 });

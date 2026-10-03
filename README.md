@@ -112,6 +112,19 @@ rodam completos sem exigir conexão real ao Supabase.
 | `GET` | `/events/tags-map` | Objeto `{ [eventoId]: Tag[] }` só para eventos publicados — usado pela Home, `/eventos` e `/favoritos` do frontend pra não precisar de 1 chamada por evento. |
 | `GET` | `/contributors` | Todos os contribuidores, ordenados por `nome` (`id, nome, avatar_url, github_url, linkedin_url, portfolio_url`). Omite `github_username`/`created_at`/`updated_at` — existem na tabela, mas nenhum consumidor do frontend lê. |
 
+### Cache HTTP
+
+As rotas de dados respondem com `Cache-Control: public, max-age=<fresco>, stale-while-revalidate=<janela>`,
+aproveitado pela CDN da Vercel. A janela é declarada por controller ou por rota com
+`@CacheTtl(...)` (`src/common/decorators/cache-ttl.decorator.ts`), usando os valores de
+`src/common/constants/cache-ttl.ts`:
+
+| Janela | `max-age` | `stale-while-revalidate` | Rotas |
+|---|---|---|---|
+| `events` | 60s | 300s | listagens, detalhe, tags do evento e recomendações |
+| `reference` | 300s | 3600s | `/tags`, `/events/tags-map`, `/contributors`, `/gallery/albums/public`, `/events/stats/public` |
+| `default` | 30s | 120s | rota cacheável sem `@CacheTtl` |
+
 Veja `SPRINT.md` para o roadmap completo (Sprint 5: galeria, ainda bloqueado por um GRANT
 manual de `auth.*` na role somente-leitura).
 
