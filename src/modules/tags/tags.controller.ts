@@ -1,5 +1,7 @@
 import { Controller, Get, UseInterceptors } from '@nestjs/common';
 import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import { CACHE_TTL } from '../../common/constants/cache-ttl';
+import { CacheTtl } from '../../common/decorators/cache-ttl.decorator';
 import { CacheControlInterceptor } from '../../common/interceptors/cache-control.interceptor';
 import { TagResponseDto } from './dto/tag-response.dto';
 import { TagsService } from './tags.service';
@@ -7,6 +9,7 @@ import { TagsService } from './tags.service';
 @ApiTags('tags')
 @Controller()
 @UseInterceptors(CacheControlInterceptor)
+@CacheTtl(CACHE_TTL.reference)
 export class TagsController {
   constructor(private readonly tagsService: TagsService) {}
 

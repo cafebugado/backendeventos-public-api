@@ -5,6 +5,8 @@ import {
   ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
+import { CACHE_TTL } from '../../common/constants/cache-ttl';
+import { CacheTtl } from '../../common/decorators/cache-ttl.decorator';
 import { CacheControlInterceptor } from '../../common/interceptors/cache-control.interceptor';
 import { ParseOptionalIntPipe } from '../../common/pipes/parse-optional-int.pipe';
 import { EventPublicResponseDto } from './dto/event-public-response.dto';
@@ -19,6 +21,7 @@ import { EventsService } from './events.service';
 @ApiTags('events')
 @Controller('events')
 @UseInterceptors(CacheControlInterceptor)
+@CacheTtl(CACHE_TTL.events)
 export class EventsController {
   constructor(private readonly eventsService: EventsService) {}
 
@@ -64,6 +67,7 @@ export class EventsController {
   }
 
   @Get('stats/public')
+  @CacheTtl(CACHE_TTL.reference)
   @ApiOkResponse({ type: EventStatsResponseDto })
   findStats(): Promise<EventStatsResponseDto> {
     return this.eventsService.getStats();

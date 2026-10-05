@@ -75,7 +75,7 @@ describe('GET /events/published (e2e)', () => {
     const response = await request(server).get('/events/published');
 
     expect(response.headers['cache-control']).toBe(
-      'public, max-age=30, stale-while-revalidate=120',
+      'public, max-age=60, stale-while-revalidate=300',
     );
   });
 
