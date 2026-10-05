@@ -79,6 +79,7 @@ describe('EventsService', () => {
     const repo: jest.Mocked<IEventoRepository> = {
       findPublished: jest.fn(),
       findFeatured: jest.fn(),
+      findUpcoming: jest.fn(),
       findBySlugOrId: jest.fn(),
       countPublished: jest.fn(),
     };
@@ -352,6 +353,39 @@ describe('EventsService', () => {
 
       expect(result.tags).toEqual([]);
       expect(result.evento).toMatchObject({ slug: 'meetup-cafe-bugado' });
+    });
+  });
+
+  describe('getUpcoming', () => {
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    it('busca os eventos a partir do hoje de Brasília e repassa os filtros', async () => {
+      // 02:30 UTC de 02/10 = 23:30 de 01/10 em Brasília.
+      jest.useFakeTimers().setSystemTime(new Date('2026-10-02T02:30:00.000Z'));
+      const { service, repo } = createService();
+      repo.findUpcoming.mockResolvedValue([]);
+
+      await service.getUpcoming({ limit: 10, offset: 20 });
+
+      // eslint-disable-next-line @typescript-eslint/unbound-method -- jest.fn() em interface, não é um método de classe real
+      expect(repo.findUpcoming).toHaveBeenCalledWith(
+        new Date('2026-10-01T00:00:00.000Z'),
+        { limit: 10, offset: 20 },
+      );
+    });
+
+    it('mapeia para o DTO público, sem campos internos de moderação', async () => {
+      const { service, repo } = createService();
+      repo.findUpcoming.mockResolvedValue([buildEvento({ id: 'futuro' })]);
+
+      const [dto] = await service.getUpcoming();
+
+      expect(dto.id).toBe('futuro');
+      expect(dto).not.toHaveProperty('status');
+      expect(dto).not.toHaveProperty('created_by');
+      expect(dto).not.toHaveProperty('motivo_recusa');
     });
   });
 

@@ -141,6 +141,42 @@ describe('Contrato de resposta — GET /events/published', () => {
   });
 });
 
+describe('Contrato de resposta — GET /events/upcoming', () => {
+  let app: INestApplication;
+  let server: Server;
+  let prisma: DeepMockProxy<PrismaService>;
+
+  beforeAll(async () => {
+    ({ app, server, prisma } = await createTestApp());
+
+    // O banco só devolve os 16 campos públicos; os internos entram aqui para
+    // provar que, mesmo se chegassem, não sairiam na resposta.
+    prisma.$queryRaw.mockResolvedValue([buildEvento()]);
+  });
+
+  afterAll(async () => {
+    await app.close();
+  });
+
+  it('tem exatamente o mesmo contrato de /events/published (16 campos)', async () => {
+    const response = await request(server).get('/events/upcoming');
+    const [firstEvent] = response.body as EventResponseBody[];
+
+    expect(Object.keys(firstEvent).sort()).toEqual(
+      [...API_CONTRACT_KEYS].sort(),
+    );
+  });
+
+  it('nunca vaza campos internos de moderação', async () => {
+    const response = await request(server).get('/events/upcoming');
+    const [firstEvent] = response.body as EventResponseBody[];
+
+    FORBIDDEN_KEYS.forEach((key) => {
+      expect(firstEvent).not.toHaveProperty(key);
+    });
+  });
+});
+
 describe('Contrato de resposta — GET /events/featured', () => {
   let app: INestApplication;
   let server: Server;
