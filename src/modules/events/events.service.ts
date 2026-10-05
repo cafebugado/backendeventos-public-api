@@ -15,16 +15,10 @@ import {
   getIsoWeek,
   getIsoYear,
   parseEventoDate,
+  todayInSaoPaulo,
 } from '../../common/utils/event-date.util';
 
 const MS_PER_DAY = 86_400_000;
-
-function todayAtUtcMidnight(): Date {
-  const now = new Date();
-  return new Date(
-    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
-  );
-}
 
 @Injectable()
 export class EventsService {
@@ -107,7 +101,7 @@ export class EventsService {
       (tagsMap[currentEvent.id] ?? []).map((tag) => tag.id),
     );
     const currentEventDate = parseEventoDate(currentEvent.data_evento);
-    const today = todayAtUtcMidnight();
+    const today = todayInSaoPaulo();
 
     const candidates: {
       evento: (typeof publicados)[number];
