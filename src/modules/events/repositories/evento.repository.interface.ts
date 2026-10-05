@@ -33,6 +33,13 @@ export type EventoPublicFields = Pick<
   | 'updated_at'
 >;
 
+/** O mínimo para ranquear um evento como recomendação. */
+export interface EventoRecommendationCandidate {
+  id: string;
+  data_evento: string;
+  tag_ids: string[];
+}
+
 export interface FindUpcomingFilters {
   limit?: number;
   offset?: number;
@@ -48,10 +55,15 @@ export interface FindPublishedFilters {
 export interface IEventoRepository {
   findPublished(filters?: FindPublishedFilters): Promise<Evento[]>;
   findFeatured(limit: number): Promise<EventoFeaturedFields[]>;
+  findFeaturedByIds(ids: string[]): Promise<EventoFeaturedFields[]>;
   findUpcoming(
     today: Date,
     filters?: FindUpcomingFilters,
   ): Promise<EventoPublicFields[]>;
+  findRecommendationCandidates(
+    today: Date,
+    excludeId: string,
+  ): Promise<EventoRecommendationCandidate[]>;
   findBySlugOrId(slugOrId: string): Promise<Evento | null>;
   countPublished(): Promise<number>;
 }

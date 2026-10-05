@@ -1,5 +1,6 @@
 import type { Server } from 'node:http';
 import { INestApplication } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { DeepMockProxy } from 'jest-mock-extended';
 import request from 'supertest';
 import { PrismaService } from '../src/prisma/prisma.service';
@@ -92,8 +93,8 @@ describe('GET /events/upcoming (e2e)', () => {
 
     await request(server).get('/events/upcoming?limit=20&offset=40');
 
-    const values = prisma.$queryRaw.mock.calls[0].slice(1);
-    expect(values.slice(-2)).toEqual([20, 40]);
+    const [query] = prisma.$queryRaw.mock.calls[0] as unknown as [Prisma.Sql];
+    expect(query.values.slice(-2)).toEqual([20, 40]);
   });
 
   it.each(['limit=0', 'limit=501', 'limit=abc', 'offset=-1'])(

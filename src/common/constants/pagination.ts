@@ -11,3 +11,10 @@ export const SAFE_LIST_LIMIT = 100;
  * paginar no client (ver issue #34).
  */
 export const UPCOMING_LIST_LIMIT = 500;
+
+/**
+ * Teto de candidatos lidos para montar as recomendações de um evento. Os
+ * candidatos vêm ordenados por data, então, se o teto for atingido, ficam de
+ * fora os eventos mais distantes no tempo (ver issue #32).
+ */
+export const RECOMMENDATION_CANDIDATES_LIMIT = 1000;
