@@ -3,6 +3,7 @@ import { INestApplication } from '@nestjs/common';
 import { Evento } from '@prisma/client';
 import { DeepMockProxy } from 'jest-mock-extended';
 import request from 'supertest';
+import { todayInSaoPaulo } from '../src/common/utils/event-date.util';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { createTestApp } from './test-app.helper';
 
@@ -10,10 +11,9 @@ type ResponseBody = Record<string, unknown>;
 
 const VALID_UUID = '11111111-1111-1111-1111-111111111111';
 
-/** "DD/MM/YYYY" relativo a hoje — mantém o teste válido independente da data de execução. */
+/** "DD/MM/YYYY" relativo a hoje (em Brasília) — mantém o teste válido independente da data de execução. */
 function daysFromNow(days: number): string {
-  const date = new Date();
-  date.setUTCHours(0, 0, 0, 0);
+  const date = todayInSaoPaulo();
   date.setUTCDate(date.getUTCDate() + days);
   const dd = String(date.getUTCDate()).padStart(2, '0');
   const mm = String(date.getUTCMonth() + 1).padStart(2, '0');

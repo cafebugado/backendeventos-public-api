@@ -5,6 +5,7 @@ import {
   IEventoRepository,
 } from './repositories/evento.repository.interface';
 import { ITagRepository } from '../tags/repositories/tag.repository.interface';
+import { todayInSaoPaulo } from '../../common/utils/event-date.util';
 import { EventsService } from './events.service';
 
 function buildTag(overrides: Partial<Tag> = {}): Tag {
@@ -19,10 +20,9 @@ function buildTag(overrides: Partial<Tag> = {}): Tag {
   };
 }
 
-/** "DD/MM/YYYY" relativo a hoje — mantém os testes válidos independente da data de execução. */
+/** "DD/MM/YYYY" relativo a hoje (em Brasília) — mantém os testes válidos independente da data de execução. */
 function daysFromNow(days: number): string {
-  const date = new Date();
-  date.setUTCHours(0, 0, 0, 0);
+  const date = todayInSaoPaulo();
   date.setUTCDate(date.getUTCDate() + days);
   const dd = String(date.getUTCDate()).padStart(2, '0');
   const mm = String(date.getUTCMonth() + 1).padStart(2, '0');
@@ -443,6 +443,54 @@ describe('EventsService', () => {
       const result = await service.getRecommended('current');
 
       expect(result.map((e) => e.id)).toEqual(['today']);
+    });
+
+    describe('virada do dia no fuso de Brasília', () => {
+      afterEach(() => {
+        jest.useRealTimers();
+      });
+
+      // 02:30 UTC de 02/10 = 23:30 de 01/10 em Brasília: o dia já virou em UTC.
+      it('às 23h30 de Brasília, o evento de hoje continua elegível e o de ontem não', async () => {
+        jest
+          .useFakeTimers()
+          .setSystemTime(new Date('2026-10-02T02:30:00.000Z'));
+        const { service, repo, tagRepo } = createService();
+        const current = buildEvento({
+          id: 'current',
+          data_evento: '10/10/2026',
+        });
+        const hoje = buildEvento({ id: 'hoje', data_evento: '01/10/2026' });
+        const ontem = buildEvento({ id: 'ontem', data_evento: '30/09/2026' });
+        repo.findBySlugOrId.mockResolvedValue(current);
+        repo.findPublished.mockResolvedValue([current, hoje, ontem]);
+        tagRepo.findEventTagsMap.mockResolvedValue({});
+
+        const result = await service.getRecommended('current');
+
+        expect(result.map((e) => e.id)).toEqual(['hoje']);
+      });
+
+      // 03:00 UTC de 02/10 = 00:00 de 02/10 em Brasília.
+      it('à meia-noite de Brasília, o evento do dia anterior passa a ser passado', async () => {
+        jest
+          .useFakeTimers()
+          .setSystemTime(new Date('2026-10-02T03:00:00.000Z'));
+        const { service, repo, tagRepo } = createService();
+        const current = buildEvento({
+          id: 'current',
+          data_evento: '10/10/2026',
+        });
+        const ontem = buildEvento({ id: 'ontem', data_evento: '01/10/2026' });
+        const hoje = buildEvento({ id: 'hoje', data_evento: '02/10/2026' });
+        repo.findBySlugOrId.mockResolvedValue(current);
+        repo.findPublished.mockResolvedValue([current, ontem, hoje]);
+        tagRepo.findEventTagsMap.mockResolvedValue({});
+
+        const result = await service.getRecommended('current');
+
+        expect(result.map((e) => e.id)).toEqual(['hoje']);
+      });
     });
 
     it('exclui o próprio evento dos candidatos', async () => {
