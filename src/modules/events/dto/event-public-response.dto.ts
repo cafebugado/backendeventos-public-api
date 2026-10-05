@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Evento } from '@prisma/client';
+import type { EventoPublicFields } from '../repositories/evento.repository.interface';
 
 const PERIODOS = ['Matinal', 'Diurno', 'Vespertino', 'Noturno'] as const;
 
@@ -54,7 +54,7 @@ export class EventPublicResponseDto {
   @ApiProperty({ type: String, format: 'date-time' })
   updated_at!: Date;
 
-  static fromEntity(entity: Evento): EventPublicResponseDto {
+  static fromEntity(entity: EventoPublicFields): EventPublicResponseDto {
     const dto = new EventPublicResponseDto();
     dto.id = entity.id;
     dto.slug = entity.slug;

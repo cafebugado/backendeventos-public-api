@@ -5,6 +5,7 @@ import {
   IEventoRepository,
 } from './repositories/evento.repository.interface';
 import { ITagRepository } from '../tags/repositories/tag.repository.interface';
+import { todayInSaoPaulo } from '../../common/utils/event-date.util';
 import { EventsService } from './events.service';
 
 function buildTag(overrides: Partial<Tag> = {}): Tag {
@@ -19,10 +20,9 @@ function buildTag(overrides: Partial<Tag> = {}): Tag {
   };
 }
 
-/** "DD/MM/YYYY" relativo a hoje — mantém os testes válidos independente da data de execução. */
+/** "DD/MM/YYYY" relativo a hoje (em Brasília) — mantém os testes válidos independente da data de execução. */
 function daysFromNow(days: number): string {
-  const date = new Date();
-  date.setUTCHours(0, 0, 0, 0);
+  const date = todayInSaoPaulo();
   date.setUTCDate(date.getUTCDate() + days);
   const dd = String(date.getUTCDate()).padStart(2, '0');
   const mm = String(date.getUTCMonth() + 1).padStart(2, '0');
@@ -79,6 +79,9 @@ describe('EventsService', () => {
     const repo: jest.Mocked<IEventoRepository> = {
       findPublished: jest.fn(),
       findFeatured: jest.fn(),
+      findUpcoming: jest.fn(),
+      findFeaturedByIds: jest.fn(),
+      findRecommendationCandidates: jest.fn(),
       findBySlugOrId: jest.fn(),
       countPublished: jest.fn(),
     };
@@ -355,7 +358,80 @@ describe('EventsService', () => {
     });
   });
 
+  describe('getUpcoming', () => {
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    it('busca os eventos a partir do hoje de Brasília e repassa os filtros', async () => {
+      // 02:30 UTC de 02/10 = 23:30 de 01/10 em Brasília.
+      jest.useFakeTimers().setSystemTime(new Date('2026-10-02T02:30:00.000Z'));
+      const { service, repo } = createService();
+      repo.findUpcoming.mockResolvedValue([]);
+
+      await service.getUpcoming({ limit: 10, offset: 20 });
+
+      // eslint-disable-next-line @typescript-eslint/unbound-method -- jest.fn() em interface, não é um método de classe real
+      expect(repo.findUpcoming).toHaveBeenCalledWith(
+        new Date('2026-10-01T00:00:00.000Z'),
+        { limit: 10, offset: 20 },
+      );
+    });
+
+    it('mapeia para o DTO público, sem campos internos de moderação', async () => {
+      const { service, repo } = createService();
+      repo.findUpcoming.mockResolvedValue([buildEvento({ id: 'futuro' })]);
+
+      const [dto] = await service.getUpcoming();
+
+      expect(dto.id).toBe('futuro');
+      expect(dto).not.toHaveProperty('status');
+      expect(dto).not.toHaveProperty('created_by');
+      expect(dto).not.toHaveProperty('motivo_recusa');
+    });
+  });
+
   describe('getRecommended', () => {
+    type Mocks = ReturnType<typeof createService>;
+
+    /**
+     * Prepara os três acessos de `getRecommended`: candidatos (id, data e ids
+     * das tags), tags do evento atual e os dados completos dos escolhidos —
+     * estes devolvidos em ordem invertida, para provar que quem ordena é o
+     * ranking, não o banco.
+     */
+    function mockRecommendationData(
+      { repo, tagRepo }: Mocks,
+      current: Evento,
+      others: Evento[],
+      tagIdsByEvento: Record<string, string[]> = {},
+    ): void {
+      repo.findBySlugOrId.mockResolvedValue(current);
+      repo.findRecommendationCandidates.mockResolvedValue(
+        others.map((evento) => ({
+          id: evento.id,
+          data_evento: evento.data_evento,
+          tag_ids: tagIdsByEvento[evento.id] ?? [],
+        })),
+      );
+      tagRepo.findTagsForEvento.mockResolvedValue(
+        (tagIdsByEvento[current.id] ?? []).map((id) => buildTag({ id })),
+      );
+      repo.findFeaturedByIds.mockImplementation((ids) =>
+        Promise.resolve(
+          others.filter((evento) => ids.includes(evento.id)).reverse(),
+        ),
+      );
+    }
+
+    function buildCurrent(overrides: Partial<Evento> = {}): Evento {
+      return buildEvento({
+        id: 'current',
+        data_evento: daysFromNow(1),
+        ...overrides,
+      });
+    }
+
     it('lança NotFoundException quando o evento atual não existe/não está publicado', async () => {
       const { service, repo } = createService();
       repo.findBySlugOrId.mockResolvedValue(null);
@@ -366,11 +442,7 @@ describe('EventsService', () => {
     });
 
     it('eventos com tag em comum aparecem antes dos sem tag em comum, mesmo mais distantes', async () => {
-      const { service, repo, tagRepo } = createService();
-      const current = buildEvento({
-        id: 'current',
-        data_evento: daysFromNow(1),
-      });
+      const mocks = createService();
       const withTag = buildEvento({
         id: 'with-tag',
         data_evento: daysFromNow(20),
@@ -379,153 +451,245 @@ describe('EventsService', () => {
         id: 'without-tag',
         data_evento: daysFromNow(2),
       });
-      repo.findBySlugOrId.mockResolvedValue(current);
-      repo.findPublished.mockResolvedValue([current, withoutTag, withTag]);
-      tagRepo.findEventTagsMap.mockResolvedValue({
-        current: [buildTag({ id: 'tag-1' })],
-        'with-tag': [buildTag({ id: 'tag-1' })],
-        'without-tag': [buildTag({ id: 'tag-2' })],
+      mockRecommendationData(mocks, buildCurrent(), [withoutTag, withTag], {
+        current: ['tag-1'],
+        'with-tag': ['tag-1'],
+        'without-tag': ['tag-2'],
       });
 
-      const result = await service.getRecommended('current');
+      const result = await mocks.service.getRecommended('current');
 
       expect(result.map((e) => e.id)).toEqual(['with-tag', 'without-tag']);
     });
 
-    it('evento sem nenhuma tag cadastrada ainda recebe recomendações (fallback por proximidade)', async () => {
-      const { service, repo, tagRepo } = createService();
-      const current = buildEvento({
-        id: 'current',
-        data_evento: daysFromNow(1),
+    it('sem tag em comum, evento da mesma semana ISO vem antes de um mais próximo de hoje', async () => {
+      const mocks = createService();
+      const current = buildCurrent({ data_evento: daysFromNow(21) });
+      const sameWeek = buildEvento({
+        id: 'same-week',
+        data_evento: current.data_evento,
       });
-      const near = buildEvento({ id: 'near', data_evento: daysFromNow(3) });
-      const far = buildEvento({ id: 'far', data_evento: daysFromNow(30) });
-      repo.findBySlugOrId.mockResolvedValue(current);
-      repo.findPublished.mockResolvedValue([current, far, near]);
-      tagRepo.findEventTagsMap.mockResolvedValue({});
+      const nearer = buildEvento({ id: 'nearer', data_evento: daysFromNow(1) });
+      mockRecommendationData(mocks, current, [nearer, sameWeek]);
 
-      const result = await service.getRecommended('current');
+      const result = await mocks.service.getRecommended('current');
+
+      expect(result.map((e) => e.id)).toEqual(['same-week', 'nearer']);
+    });
+
+    it('evento sem nenhuma tag cadastrada ainda recebe recomendações (fallback por proximidade)', async () => {
+      const mocks = createService();
+      const near = buildEvento({ id: 'near', data_evento: daysFromNow(10) });
+      const far = buildEvento({ id: 'far', data_evento: daysFromNow(30) });
+      mockRecommendationData(mocks, buildCurrent(), [far, near]);
+
+      const result = await mocks.service.getRecommended('current');
 
       expect(result.map((e) => e.id)).toEqual(['near', 'far']);
     });
 
-    it('exclui eventos passados', async () => {
-      const { service, repo, tagRepo } = createService();
-      const current = buildEvento({
-        id: 'current',
-        data_evento: daysFromNow(1),
+    it('considera todos os candidatos: o melhor aparece mesmo sendo o último de 150', async () => {
+      const mocks = createService();
+      const others = Array.from({ length: 149 }, (_, i) =>
+        buildEvento({ id: `e${i}`, data_evento: daysFromNow(10 + i) }),
+      );
+      const best = buildEvento({ id: 'best', data_evento: daysFromNow(200) });
+      mockRecommendationData(mocks, buildCurrent(), [...others, best], {
+        current: ['tag-1'],
+        best: ['tag-1'],
       });
-      const past = buildEvento({ id: 'past', data_evento: daysFromNow(-5) });
-      const upcoming = buildEvento({
-        id: 'upcoming',
-        data_evento: daysFromNow(3),
-      });
-      repo.findBySlugOrId.mockResolvedValue(current);
-      repo.findPublished.mockResolvedValue([current, past, upcoming]);
-      tagRepo.findEventTagsMap.mockResolvedValue({});
 
-      const result = await service.getRecommended('current');
+      const result = await mocks.service.getRecommended('current');
 
-      expect(result.map((e) => e.id)).toEqual(['upcoming']);
+      expect(result[0].id).toBe('best');
     });
 
-    it('inclui evento que acontece hoje (não é "passado")', async () => {
-      const { service, repo, tagRepo } = createService();
-      const current = buildEvento({
-        id: 'current',
-        data_evento: daysFromNow(1),
-      });
-      const today = buildEvento({ id: 'today', data_evento: daysFromNow(0) });
-      repo.findBySlugOrId.mockResolvedValue(current);
-      repo.findPublished.mockResolvedValue([current, today]);
-      tagRepo.findEventTagsMap.mockResolvedValue({});
+    it('pede ao repositório os eventos futuros, excluindo o próprio evento pelo id', async () => {
+      const mocks = createService();
+      mockRecommendationData(mocks, buildCurrent({ id: 'uuid-do-evento' }), []);
 
-      const result = await service.getRecommended('current');
+      await mocks.service.getRecommended('slug-do-evento');
 
-      expect(result.map((e) => e.id)).toEqual(['today']);
+      // eslint-disable-next-line @typescript-eslint/unbound-method -- jest.fn() em interface, não é um método de classe real
+      expect(mocks.repo.findRecommendationCandidates).toHaveBeenCalledWith(
+        expect.any(Date),
+        'uuid-do-evento',
+      );
+      // eslint-disable-next-line @typescript-eslint/unbound-method -- jest.fn() em interface, não é um método de classe real
+      expect(mocks.tagRepo.findTagsForEvento).toHaveBeenCalledWith(
+        'uuid-do-evento',
+      );
     });
 
-    it('exclui o próprio evento dos candidatos', async () => {
-      const { service, repo, tagRepo } = createService();
-      const current = buildEvento({
-        id: 'current',
-        data_evento: daysFromNow(1),
+    describe('virada do dia no fuso de Brasília', () => {
+      afterEach(() => {
+        jest.useRealTimers();
       });
-      repo.findBySlugOrId.mockResolvedValue(current);
-      repo.findPublished.mockResolvedValue([current]);
-      tagRepo.findEventTagsMap.mockResolvedValue({});
 
-      await expect(service.getRecommended('current')).resolves.toEqual([]);
+      it.each([
+        // 02:30 UTC de 02/10 = 23:30 de 01/10 em Brasília: o dia já virou em UTC.
+        ['às 23h30 de Brasília', '2026-10-02T02:30:00.000Z', '2026-10-01'],
+        // 03:00 UTC de 02/10 = 00:00 de 02/10 em Brasília.
+        ['à meia-noite de Brasília', '2026-10-02T03:00:00.000Z', '2026-10-02'],
+      ])(
+        '%s, busca candidatos a partir do dia certo',
+        async (_descricao, agora, hojeEsperado) => {
+          jest.useFakeTimers().setSystemTime(new Date(agora));
+          const mocks = createService();
+          mockRecommendationData(
+            mocks,
+            buildCurrent({ data_evento: '10/10/2026' }),
+            [],
+          );
+
+          await mocks.service.getRecommended('current');
+
+          // eslint-disable-next-line @typescript-eslint/unbound-method -- jest.fn() em interface, não é um método de classe real
+          expect(mocks.repo.findRecommendationCandidates).toHaveBeenCalledWith(
+            new Date(`${hojeEsperado}T00:00:00.000Z`),
+            'current',
+          );
+        },
+      );
+
+      it('às 23h30 de Brasília, o evento de hoje é o mais próximo (0 dias)', async () => {
+        jest
+          .useFakeTimers()
+          .setSystemTime(new Date('2026-10-02T02:30:00.000Z'));
+        const mocks = createService();
+        const hoje = buildEvento({ id: 'hoje', data_evento: '01/10/2026' });
+        const amanha = buildEvento({ id: 'amanha', data_evento: '02/10/2026' });
+        mockRecommendationData(
+          mocks,
+          buildCurrent({ data_evento: '20/11/2026' }),
+          [amanha, hoje],
+        );
+
+        const result = await mocks.service.getRecommended('current');
+
+        expect(result.map((e) => e.id)).toEqual(['hoje', 'amanha']);
+      });
+    });
+
+    it('ignora candidato com data de calendário inválida', async () => {
+      const mocks = createService();
+      const invalida = buildEvento({
+        id: 'invalida',
+        data_evento: '31/02/2099',
+      });
+      const valida = buildEvento({ id: 'valida', data_evento: daysFromNow(5) });
+      mockRecommendationData(mocks, buildCurrent(), [invalida, valida]);
+
+      const result = await mocks.service.getRecommended('current');
+
+      expect(result.map((e) => e.id)).toEqual(['valida']);
+    });
+
+    it('retorna array vazio quando não há candidatos', async () => {
+      const mocks = createService();
+      mockRecommendationData(mocks, buildCurrent(), []);
+
+      await expect(mocks.service.getRecommended('current')).resolves.toEqual(
+        [],
+      );
     });
 
     it('respeita o limit customizado', async () => {
-      const { service, repo, tagRepo } = createService();
-      const current = buildEvento({
-        id: 'current',
-        data_evento: daysFromNow(1),
-      });
+      const mocks = createService();
       const others = [2, 3, 4, 5].map((n) =>
         buildEvento({ id: `e${n}`, data_evento: daysFromNow(n) }),
       );
-      repo.findBySlugOrId.mockResolvedValue(current);
-      repo.findPublished.mockResolvedValue([current, ...others]);
-      tagRepo.findEventTagsMap.mockResolvedValue({});
+      mockRecommendationData(mocks, buildCurrent(), others);
 
-      const result = await service.getRecommended('current', 2);
+      const result = await mocks.service.getRecommended('current', 2);
 
-      expect(result).toHaveLength(2);
+      expect(result.map((e) => e.id)).toEqual(['e2', 'e3']);
     });
 
     it('usa 3 como limit default quando não informado', async () => {
-      const { service, repo, tagRepo } = createService();
-      const current = buildEvento({
-        id: 'current',
-        data_evento: daysFromNow(1),
-      });
+      const mocks = createService();
       const others = [2, 3, 4, 5, 6].map((n) =>
         buildEvento({ id: `e${n}`, data_evento: daysFromNow(n) }),
       );
-      repo.findBySlugOrId.mockResolvedValue(current);
-      repo.findPublished.mockResolvedValue([current, ...others]);
-      tagRepo.findEventTagsMap.mockResolvedValue({});
+      mockRecommendationData(mocks, buildCurrent(), others);
 
-      const result = await service.getRecommended('current');
+      const result = await mocks.service.getRecommended('current');
 
       expect(result).toHaveLength(3);
     });
 
     it('retorna menos que o limit quando não há candidatos suficientes, sem erro', async () => {
-      const { service, repo, tagRepo } = createService();
-      const current = buildEvento({
-        id: 'current',
-        data_evento: daysFromNow(1),
-      });
+      const mocks = createService();
       const only = buildEvento({ id: 'only', data_evento: daysFromNow(2) });
-      repo.findBySlugOrId.mockResolvedValue(current);
-      repo.findPublished.mockResolvedValue([current, only]);
-      tagRepo.findEventTagsMap.mockResolvedValue({});
+      mockRecommendationData(mocks, buildCurrent(), [only]);
 
-      const result = await service.getRecommended('current');
+      const result = await mocks.service.getRecommended('current');
 
-      expect(result).toHaveLength(1);
-      expect(result[0].id).toBe('only');
+      expect(result.map((e) => e.id)).toEqual(['only']);
     });
 
-    it('mapeia os candidatos para o DTO enxuto (8 campos, mesmo shape de /events/featured)', async () => {
-      const { service, repo, tagRepo } = createService();
-      const current = buildEvento({
-        id: 'current',
-        data_evento: daysFromNow(1),
-      });
+    it('nunca retorna mais que 10, mesmo se um limit maior for pedido', async () => {
+      const mocks = createService();
+      const others = Array.from({ length: 12 }, (_, i) =>
+        buildEvento({ id: `e${i}`, data_evento: daysFromNow(i + 2) }),
+      );
+      mockRecommendationData(mocks, buildCurrent(), others);
+
+      const result = await mocks.service.getRecommended('current', 999);
+
+      expect(result).toHaveLength(10);
+    });
+
+    it('usa ao menos 1, mesmo se um limit menor que 1 for pedido', async () => {
+      const mocks = createService();
+      const others = [2, 3].map((n) =>
+        buildEvento({ id: `e${n}`, data_evento: daysFromNow(n) }),
+      );
+      mockRecommendationData(mocks, buildCurrent(), others);
+
+      const result = await mocks.service.getRecommended('current', 0);
+
+      expect(result.map((e) => e.id)).toEqual(['e2']);
+    });
+
+    it('lê os dados completos só dos escolhidos, sem a lista de publicados nem o mapa de tags', async () => {
+      const mocks = createService();
+      const others = [2, 3, 4, 5, 6].map((n) =>
+        buildEvento({ id: `e${n}`, data_evento: daysFromNow(n) }),
+      );
+      mockRecommendationData(mocks, buildCurrent(), others);
+
+      await mocks.service.getRecommended('current', 2);
+
+      // eslint-disable-next-line @typescript-eslint/unbound-method -- jest.fn() em interface, não é um método de classe real
+      expect(mocks.repo.findFeaturedByIds).toHaveBeenCalledWith(['e2', 'e3']);
+      // eslint-disable-next-line @typescript-eslint/unbound-method -- jest.fn() em interface, não é um método de classe real
+      expect(mocks.repo.findPublished).not.toHaveBeenCalled();
+      // eslint-disable-next-line @typescript-eslint/unbound-method -- jest.fn() em interface, não é um método de classe real
+      expect(mocks.tagRepo.findEventTagsMap).not.toHaveBeenCalled();
+    });
+
+    it('ignora um escolhido que saiu do ar entre o ranking e a leitura dos dados', async () => {
+      const mocks = createService();
+      const fica = buildEvento({ id: 'fica', data_evento: daysFromNow(3) });
+      const saiu = buildEvento({ id: 'saiu', data_evento: daysFromNow(2) });
+      mockRecommendationData(mocks, buildCurrent(), [saiu, fica]);
+      mocks.repo.findFeaturedByIds.mockResolvedValue([fica]);
+
+      const result = await mocks.service.getRecommended('current');
+
+      expect(result.map((e) => e.id)).toEqual(['fica']);
+    });
+
+    it('mapeia os escolhidos para o DTO enxuto (8 campos, mesmo shape de /events/featured)', async () => {
+      const mocks = createService();
       const candidate = buildEvento({
         id: 'candidate',
         data_evento: daysFromNow(2),
       });
-      repo.findBySlugOrId.mockResolvedValue(current);
-      repo.findPublished.mockResolvedValue([current, candidate]);
-      tagRepo.findEventTagsMap.mockResolvedValue({});
+      mockRecommendationData(mocks, buildCurrent(), [candidate]);
 
-      const result = await service.getRecommended('current');
+      const result = await mocks.service.getRecommended('current');
 
       expect(Object.keys(result[0]).sort()).toEqual(
         [
@@ -539,40 +703,6 @@ describe('EventsService', () => {
           'created_at',
         ].sort(),
       );
-    });
-
-    it('nunca retorna mais que 10, mesmo se um limit maior for pedido', async () => {
-      const { service, repo, tagRepo } = createService();
-      const current = buildEvento({
-        id: 'current',
-        data_evento: daysFromNow(1),
-      });
-      const others = Array.from({ length: 12 }, (_, i) =>
-        buildEvento({ id: `e${i}`, data_evento: daysFromNow(i + 2) }),
-      );
-      repo.findBySlugOrId.mockResolvedValue(current);
-      repo.findPublished.mockResolvedValue([current, ...others]);
-      tagRepo.findEventTagsMap.mockResolvedValue({});
-
-      const result = await service.getRecommended('current', 999);
-
-      expect(result.length).toBeLessThanOrEqual(10);
-    });
-
-    it('usa ao menos 1, mesmo se um limit menor que 1 for pedido', async () => {
-      const { service, repo, tagRepo } = createService();
-      const current = buildEvento({
-        id: 'current',
-        data_evento: daysFromNow(1),
-      });
-      const only = buildEvento({ id: 'only', data_evento: daysFromNow(2) });
-      repo.findBySlugOrId.mockResolvedValue(current);
-      repo.findPublished.mockResolvedValue([current, only]);
-      tagRepo.findEventTagsMap.mockResolvedValue({});
-
-      const result = await service.getRecommended('current', 0);
-
-      expect(result).toHaveLength(1);
     });
   });
 

@@ -1,4 +1,10 @@
-import { getIsoWeek, getIsoYear, parseEventoDate } from './event-date.util';
+import {
+  getIsoWeek,
+  getIsoYear,
+  parseEventoDate,
+  toSortableDateKey,
+  todayInSaoPaulo,
+} from './event-date.util';
 
 describe('parseEventoDate', () => {
   it('faz parse de uma data válida DD/MM/YYYY', () => {
@@ -64,5 +70,58 @@ describe('getIsoWeek / getIsoYear', () => {
 
     expect(getIsoWeek(a)).toBe(getIsoWeek(b));
     expect(getIsoYear(a)).toBe(getIsoYear(b));
+  });
+});
+
+describe('todayInSaoPaulo', () => {
+  // Brasília é UTC-3 o ano todo (sem horário de verão desde 2019).
+  it.each([
+    ['20h59 de Brasília', '2026-10-01T23:59:00.000Z', '2026-10-01'],
+    [
+      '21h00 de Brasília (o dia já virou em UTC)',
+      '2026-10-02T00:00:00.000Z',
+      '2026-10-01',
+    ],
+    ['23h59 de Brasília', '2026-10-02T02:59:00.000Z', '2026-10-01'],
+    ['00h00 de Brasília', '2026-10-02T03:00:00.000Z', '2026-10-02'],
+  ])('%s', (_descricao, agora, diaEsperado) => {
+    expect(todayInSaoPaulo(new Date(agora)).toISOString()).toBe(
+      `${diaEsperado}T00:00:00.000Z`,
+    );
+  });
+
+  it('acompanha a virada de mês e de ano em Brasília, não em UTC', () => {
+    expect(
+      todayInSaoPaulo(new Date('2027-01-01T01:30:00.000Z')).toISOString(),
+    ).toBe('2026-12-31T00:00:00.000Z');
+  });
+
+  it('usa o relógio atual quando nenhum instante é informado', () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-10-02T02:30:00.000Z'));
+    try {
+      expect(todayInSaoPaulo().toISOString()).toBe('2026-10-01T00:00:00.000Z');
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+});
+
+describe('toSortableDateKey', () => {
+  it('formata a data como YYYYMMDD, com zeros à esquerda', () => {
+    expect(toSortableDateKey(new Date('2026-03-05T00:00:00.000Z'))).toBe(
+      '20260305',
+    );
+  });
+
+  it('ordena como texto na mesma ordem das datas', () => {
+    const datas = ['2026-12-01', '2026-02-10', '2027-01-01', '2026-02-09'];
+    const chaves = datas.map((d) => toSortableDateKey(new Date(d)));
+
+    expect([...chaves].sort()).toEqual([
+      '20260209',
+      '20260210',
+      '20261201',
+      '20270101',
+    ]);
   });
 });

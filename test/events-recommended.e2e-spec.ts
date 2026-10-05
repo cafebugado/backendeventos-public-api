@@ -3,6 +3,7 @@ import { INestApplication } from '@nestjs/common';
 import { Evento } from '@prisma/client';
 import { DeepMockProxy } from 'jest-mock-extended';
 import request from 'supertest';
+import { todayInSaoPaulo } from '../src/common/utils/event-date.util';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { createTestApp } from './test-app.helper';
 
@@ -10,10 +11,9 @@ type ResponseBody = Record<string, unknown>;
 
 const VALID_UUID = '11111111-1111-1111-1111-111111111111';
 
-/** "DD/MM/YYYY" relativo a hoje — mantém o teste válido independente da data de execução. */
+/** "DD/MM/YYYY" relativo a hoje (em Brasília) — mantém o teste válido independente da data de execução. */
 function daysFromNow(days: number): string {
-  const date = new Date();
-  date.setUTCHours(0, 0, 0, 0);
+  const date = todayInSaoPaulo();
   date.setUTCDate(date.getUTCDate() + days);
   const dd = String(date.getUTCDate()).padStart(2, '0');
   const mm = String(date.getUTCMonth() + 1).padStart(2, '0');
@@ -61,9 +61,30 @@ describe('GET /events/:id/recommended (e2e)', () => {
   beforeEach(() => {
     prisma.evento.findFirst.mockReset();
     prisma.evento.findMany.mockReset();
-    prisma.eventoTag.findMany.mockReset();
-    prisma.eventoTag.findMany.mockResolvedValue([]);
+    prisma.$queryRaw.mockReset();
+    prisma.tag.findMany.mockReset();
+    prisma.tag.findMany.mockResolvedValue([]);
   });
+
+  /**
+   * A rota faz duas leituras de eventos além do evento atual: os candidatos
+   * (SQL, só id/data/tags) e depois os dados completos dos escolhidos.
+   */
+  function mockCandidates(others: Evento[]): void {
+    prisma.$queryRaw.mockResolvedValue(
+      others.map((evento) => ({
+        id: evento.id,
+        data_evento: evento.data_evento,
+        tag_ids: [],
+      })),
+    );
+    prisma.evento.findMany.mockImplementation(((args: {
+      where: { id: { in: string[] } };
+    }) =>
+      Promise.resolve(
+        others.filter((evento) => args.where.id.in.includes(evento.id)),
+      )) as never);
+  }
 
   it('documenta a rota no Swagger (/docs-json)', async () => {
     const response = await request(server).get('/docs-json');
@@ -88,7 +109,7 @@ describe('GET /events/:id/recommended (e2e)', () => {
       }),
     );
     prisma.evento.findFirst.mockResolvedValue(current);
-    prisma.evento.findMany.mockResolvedValue([current, ...others]);
+    mockCandidates(others);
 
     const response = await request(server).get(
       `/events/${VALID_UUID}/recommended`,
@@ -98,6 +119,29 @@ describe('GET /events/:id/recommended (e2e)', () => {
     expect(response.status).toBe(200);
     expect(body).toHaveLength(3);
     expect(body.some((e) => e.id === VALID_UUID)).toBe(false);
+  });
+
+  it('devolve na ordem do ranking (mais próximo primeiro), não na ordem do banco', async () => {
+    const current = buildEvento();
+    const longe = buildEvento({
+      id: '22222222-2222-2222-2222-222222222229',
+      slug: 'longe',
+      data_evento: daysFromNow(40),
+    });
+    const perto = buildEvento({
+      id: '22222222-2222-2222-2222-222222222221',
+      slug: 'perto',
+      data_evento: daysFromNow(12),
+    });
+    prisma.evento.findFirst.mockResolvedValue(current);
+    mockCandidates([longe, perto]);
+
+    const response = await request(server).get(
+      `/events/${VALID_UUID}/recommended`,
+    );
+    const body = response.body as ResponseBody[];
+
+    expect(body.map((e) => e.slug)).toEqual(['perto', 'longe']);
   });
 
   it('respeita ?limit= informado', async () => {
@@ -110,7 +154,7 @@ describe('GET /events/:id/recommended (e2e)', () => {
       }),
     );
     prisma.evento.findFirst.mockResolvedValue(current);
-    prisma.evento.findMany.mockResolvedValue([current, ...others]);
+    mockCandidates(others);
 
     const response = await request(server).get(
       `/events/${VALID_UUID}/recommended?limit=2`,
@@ -124,7 +168,7 @@ describe('GET /events/:id/recommended (e2e)', () => {
   it('retorna array vazio (nunca erro) quando não há candidatos', async () => {
     const current = buildEvento();
     prisma.evento.findFirst.mockResolvedValue(current);
-    prisma.evento.findMany.mockResolvedValue([current]);
+    mockCandidates([]);
 
     const response = await request(server).get(
       `/events/${VALID_UUID}/recommended`,
@@ -137,7 +181,7 @@ describe('GET /events/:id/recommended (e2e)', () => {
   it('rejeita ?limit= não numérico com 400', async () => {
     const current = buildEvento();
     prisma.evento.findFirst.mockResolvedValue(current);
-    prisma.evento.findMany.mockResolvedValue([current]);
+    mockCandidates([]);
 
     await request(server)
       .get(`/events/${VALID_UUID}/recommended?limit=abc`)
@@ -152,7 +196,7 @@ describe('GET /events/:id/recommended (e2e)', () => {
       data_evento: daysFromNow(2),
     });
     prisma.evento.findFirst.mockResolvedValue(current);
-    prisma.evento.findMany.mockResolvedValue([current, other]);
+    mockCandidates([other]);
 
     const response = await request(server).get(
       `/events/${VALID_UUID}/recommended`,
@@ -176,7 +220,7 @@ describe('GET /events/:id/recommended (e2e)', () => {
   it('retorna o header Cache-Control configurado', async () => {
     const current = buildEvento();
     prisma.evento.findFirst.mockResolvedValue(current);
-    prisma.evento.findMany.mockResolvedValue([current]);
+    mockCandidates([]);
 
     const response = await request(server).get(
       `/events/${VALID_UUID}/recommended`,
