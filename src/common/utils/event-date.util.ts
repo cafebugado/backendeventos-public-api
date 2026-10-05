@@ -39,6 +39,17 @@ export function todayInSaoPaulo(now: Date = new Date()): Date {
   return new Date(Date.UTC(part('year'), part('month') - 1, part('day')));
 }
 
+/**
+ * Data como "YYYYMMDD": texto que ordena igual à data. É a chave usada para
+ * comparar com `data_evento` direto no banco (ver `findUpcoming`).
+ */
+export function toSortableDateKey(date: Date): string {
+  const year = String(date.getUTCFullYear()).padStart(4, '0');
+  const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(date.getUTCDate()).padStart(2, '0');
+  return `${year}${month}${day}`;
+}
+
 function isoThursdayOf(date: Date): Date {
   const d = new Date(
     Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()),

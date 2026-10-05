@@ -6,6 +6,7 @@ import { EventStatsResponseDto } from './dto/event-stats-response.dto';
 import { EVENTO_REPOSITORY } from './repositories/evento.repository.interface';
 import type {
   FindPublishedFilters,
+  FindUpcomingFilters,
   IEventoRepository,
 } from './repositories/evento.repository.interface';
 import { TAG_REPOSITORY } from '../tags/repositories/tag.repository.interface';
@@ -35,6 +36,16 @@ export class EventsService {
     filters?: FindPublishedFilters,
   ): Promise<EventPublicResponseDto[]> {
     const eventos = await this.eventoRepository.findPublished(filters);
+    return eventos.map((evento) => EventPublicResponseDto.fromEntity(evento));
+  }
+
+  async getUpcoming(
+    filters?: FindUpcomingFilters,
+  ): Promise<EventPublicResponseDto[]> {
+    const eventos = await this.eventoRepository.findUpcoming(
+      todayInSaoPaulo(),
+      filters,
+    );
     return eventos.map((evento) => EventPublicResponseDto.fromEntity(evento));
   }
 

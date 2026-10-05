@@ -2,6 +2,7 @@ import {
   getIsoWeek,
   getIsoYear,
   parseEventoDate,
+  toSortableDateKey,
   todayInSaoPaulo,
 } from './event-date.util';
 
@@ -102,5 +103,25 @@ describe('todayInSaoPaulo', () => {
     } finally {
       jest.useRealTimers();
     }
+  });
+});
+
+describe('toSortableDateKey', () => {
+  it('formata a data como YYYYMMDD, com zeros à esquerda', () => {
+    expect(toSortableDateKey(new Date('2026-03-05T00:00:00.000Z'))).toBe(
+      '20260305',
+    );
+  });
+
+  it('ordena como texto na mesma ordem das datas', () => {
+    const datas = ['2026-12-01', '2026-02-10', '2027-01-01', '2026-02-09'];
+    const chaves = datas.map((d) => toSortableDateKey(new Date(d)));
+
+    expect([...chaves].sort()).toEqual([
+      '20260209',
+      '20260210',
+      '20261201',
+      '20270101',
+    ]);
   });
 });

@@ -15,6 +15,7 @@ import { EventDetailResponseDto } from './dto/event-detail-response.dto';
 import { EventStatsResponseDto } from './dto/event-stats-response.dto';
 import { ListPublishedQueryDto } from './dto/list-published-query.dto';
 import { ListFeaturedQueryDto } from './dto/list-featured-query.dto';
+import { ListUpcomingQueryDto } from './dto/list-upcoming-query.dto';
 import { TagResponseDto } from '../tags/dto/tag-response.dto';
 import { EventsService } from './events.service';
 
@@ -33,6 +34,19 @@ export class EventsController {
     @Query() query: ListPublishedQueryDto,
   ): Promise<EventPublicResponseDto[]> {
     return this.eventsService.getPublished(query);
+  }
+
+  @Get('upcoming')
+  @ApiOkResponse({
+    type: EventPublicResponseDto,
+    isArray: true,
+    description:
+      'Eventos publicados com data de hoje em diante (fuso de Brasília), ordenados por data e horário.',
+  })
+  findUpcoming(
+    @Query() query: ListUpcomingQueryDto,
+  ): Promise<EventPublicResponseDto[]> {
+    return this.eventsService.getUpcoming(query);
   }
 
   @Get('featured')

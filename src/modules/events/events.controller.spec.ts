@@ -2,6 +2,7 @@ import { EventsController } from './events.controller';
 import { EventsService } from './events.service';
 import { ListPublishedQueryDto } from './dto/list-published-query.dto';
 import { ListFeaturedQueryDto } from './dto/list-featured-query.dto';
+import { ListUpcomingQueryDto } from './dto/list-upcoming-query.dto';
 
 describe('EventsController', () => {
   function createController(): {
@@ -11,6 +12,7 @@ describe('EventsController', () => {
         EventsService,
         | 'getPublished'
         | 'getFeatured'
+        | 'getUpcoming'
         | 'getBySlugOrId'
         | 'getEventTags'
         | 'getRecommended'
@@ -24,6 +26,7 @@ describe('EventsController', () => {
         EventsService,
         | 'getPublished'
         | 'getFeatured'
+        | 'getUpcoming'
         | 'getBySlugOrId'
         | 'getEventTags'
         | 'getRecommended'
@@ -33,6 +36,7 @@ describe('EventsController', () => {
     > = {
       getPublished: jest.fn(),
       getFeatured: jest.fn(),
+      getUpcoming: jest.fn(),
       getBySlugOrId: jest.fn(),
       getEventTags: jest.fn(),
       getRecommended: jest.fn(),
@@ -66,6 +70,16 @@ describe('EventsController', () => {
     service.getPublished.mockResolvedValue(dtos);
 
     await expect(controller.findPublished({ offset: 0 })).resolves.toBe(dtos);
+  });
+
+  it('repassa a query (limit/offset) para o EventsService.getUpcoming', async () => {
+    const { controller, service } = createController();
+    const dtos = [{ id: '1' }] as never;
+    service.getUpcoming.mockResolvedValue(dtos);
+    const query: ListUpcomingQueryDto = { limit: 50, offset: 100 };
+
+    await expect(controller.findUpcoming(query)).resolves.toBe(dtos);
+    expect(service.getUpcoming).toHaveBeenCalledWith(query);
   });
 
   it('repassa o limit da query para o EventsService.getFeatured', async () => {
