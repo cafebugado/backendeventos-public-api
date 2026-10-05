@@ -103,35 +103,34 @@ export class EventsService {
       throw new NotFoundException(`Evento '${eventoId}' não encontrado`);
     }
 
-    const [publicados, tagsMap] = await Promise.all([
-      this.eventoRepository.findPublished(),
-      this.tagRepository.findEventTagsMap(),
+    const today = todayInSaoPaulo();
+    const [candidatos, currentTags] = await Promise.all([
+      this.eventoRepository.findRecommendationCandidates(
+        today,
+        currentEvent.id,
+      ),
+      this.tagRepository.findTagsForEvento(currentEvent.id),
     ]);
 
-    const currentTagIds = new Set(
-      (tagsMap[currentEvent.id] ?? []).map((tag) => tag.id),
-    );
+    const currentTagIds = new Set(currentTags.map((tag) => tag.id));
     const currentEventDate = parseEventoDate(currentEvent.data_evento);
-    const today = todayInSaoPaulo();
 
-    const candidates: {
-      evento: (typeof publicados)[number];
+    const ranked: {
+      id: string;
       hasTagMatch: boolean;
       sameIsoWeek: boolean;
       daysAway: number;
     }[] = [];
 
-    for (const evento of publicados) {
-      if (evento.id === currentEvent.id) {
-        continue;
-      }
-      const eventDate = parseEventoDate(evento.data_evento);
-      if (!eventDate || eventDate < today) {
+    for (const candidato of candidatos) {
+      // A consulta já filtra pelo formato; aqui cai só data de calendário
+      // inválida (ex.: 31/02), que não tem como ser ranqueada.
+      const eventDate = parseEventoDate(candidato.data_evento);
+      if (!eventDate) {
         continue;
       }
 
-      const eventoTagIds = (tagsMap[evento.id] ?? []).map((tag) => tag.id);
-      const hasTagMatch = eventoTagIds.some((id) => currentTagIds.has(id));
+      const hasTagMatch = candidato.tag_ids.some((id) => currentTagIds.has(id));
       const sameIsoWeek =
         currentEventDate !== null &&
         getIsoWeek(eventDate) === getIsoWeek(currentEventDate) &&
@@ -140,14 +139,14 @@ export class EventsService {
         (eventDate.getTime() - today.getTime()) / MS_PER_DAY,
       );
 
-      candidates.push({ evento, hasTagMatch, sameIsoWeek, daysAway });
+      ranked.push({ id: candidato.id, hasTagMatch, sameIsoWeek, daysAway });
     }
 
     // Ranking suave (replica evento_service.py:get_recommended_events): tag em
     // comum > mesma semana ISO > mais próximo. Não é um filtro rígido com
     // fallback manual — se faltar candidato com tag em comum, os critérios
     // seguintes preenchem o resto naturalmente.
-    candidates.sort((a, b) => {
+    ranked.sort((a, b) => {
       if (a.hasTagMatch !== b.hasTagMatch) {
         return a.hasTagMatch ? -1 : 1;
       }
@@ -161,10 +160,17 @@ export class EventsService {
     // motivo de existir em vez de um DTO com class-validator) — o clamp fica
     // aqui, na camada de negócio.
     const safeLimit = Math.min(Math.max(limit, 1), 10);
+    const escolhidos = ranked.slice(0, safeLimit).map(({ id }) => id);
 
-    return candidates
-      .slice(0, safeLimit)
-      .map(({ evento }) => EventFeaturedResponseDto.fromEntity(evento));
+    const eventos = await this.eventoRepository.findFeaturedByIds(escolhidos);
+    const eventoById = new Map(eventos.map((evento) => [evento.id, evento]));
+
+    // O banco não devolve na ordem do ranking, e um evento pode ter saído do
+    // ar entre as duas consultas: reordena e ignora o que não voltou.
+    return escolhidos.flatMap((id) => {
+      const evento = eventoById.get(id);
+      return evento ? [EventFeaturedResponseDto.fromEntity(evento)] : [];
+    });
   }
 
   async getStats(): Promise<EventStatsResponseDto> {
