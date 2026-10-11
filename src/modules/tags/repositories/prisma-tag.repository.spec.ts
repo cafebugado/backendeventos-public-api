@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import { mockDeep } from 'jest-mock-extended';
 import { SAFE_LIST_LIMIT } from '../../../common/constants/pagination';
 import { PrismaService } from '../../../prisma/prisma.service';
@@ -30,29 +31,29 @@ describe('PrismaTagRepository', () => {
   });
 
   describe('findEventTagsMap', () => {
-    it('busca evento_tags de eventos publicados, incluindo a tag relacionada', async () => {
+    it('agrega os ids das tags por evento, só de eventos publicados', async () => {
       const prisma = mockDeep<PrismaService>();
-      prisma.eventoTag.findMany.mockResolvedValue([]);
+      prisma.$queryRaw.mockResolvedValue([]);
+      prisma.tag.findMany.mockResolvedValue([]);
       const repo = new PrismaTagRepository(prisma);
 
       await repo.findEventTagsMap();
 
-      // eslint-disable-next-line @typescript-eslint/unbound-method -- mock do jest-mock-extended, não chamada de método real
-      expect(prisma.eventoTag.findMany).toHaveBeenCalledWith({
-        where: { evento: { status: 'publicado' } },
-        select: { evento_id: true, tag: true },
-      });
+      const [query] = prisma.$queryRaw.mock.calls[0] as unknown as [Prisma.Sql];
+      expect(query.sql).toContain('array_agg(et.tag_id)');
+      expect(query.sql).toContain("e.status = 'publicado'");
+      expect(query.sql).toContain('GROUP BY et.evento_id');
     });
 
-    it('agrupa as tags por evento_id', async () => {
+    it('monta o mapa evento_id -> tags a partir dos ids agregados', async () => {
       const prisma = mockDeep<PrismaService>();
       const tagBackend = { id: 't1', nome: 'Backend' };
       const tagFrontend = { id: 't2', nome: 'Frontend' };
-      prisma.eventoTag.findMany.mockResolvedValue([
-        { evento_id: 'e1', tag: tagBackend },
-        { evento_id: 'e1', tag: tagFrontend },
-        { evento_id: 'e2', tag: tagBackend },
-      ] as never);
+      prisma.$queryRaw.mockResolvedValue([
+        { evento_id: 'e1', tag_ids: ['t1', 't2'] },
+        { evento_id: 'e2', tag_ids: ['t1'] },
+      ]);
+      prisma.tag.findMany.mockResolvedValue([tagBackend, tagFrontend] as never);
       const repo = new PrismaTagRepository(prisma);
 
       const result = await repo.findEventTagsMap();
@@ -63,9 +64,24 @@ describe('PrismaTagRepository', () => {
       });
     });
 
+    it('ignora id de tag que não existe mais', async () => {
+      const prisma = mockDeep<PrismaService>();
+      const tagBackend = { id: 't1', nome: 'Backend' };
+      prisma.$queryRaw.mockResolvedValue([
+        { evento_id: 'e1', tag_ids: ['t1', 'removida'] },
+      ]);
+      prisma.tag.findMany.mockResolvedValue([tagBackend] as never);
+      const repo = new PrismaTagRepository(prisma);
+
+      await expect(repo.findEventTagsMap()).resolves.toEqual({
+        e1: [tagBackend],
+      });
+    });
+
     it('retorna objeto vazio quando não há nenhuma associação evento-tag', async () => {
       const prisma = mockDeep<PrismaService>();
-      prisma.eventoTag.findMany.mockResolvedValue([]);
+      prisma.$queryRaw.mockResolvedValue([]);
+      prisma.tag.findMany.mockResolvedValue([]);
       const repo = new PrismaTagRepository(prisma);
 
       await expect(repo.findEventTagsMap()).resolves.toEqual({});
