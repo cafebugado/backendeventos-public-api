@@ -1,5 +1,6 @@
 import type { Server } from 'node:http';
 import { INestApplication } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { DeepMockProxy } from 'jest-mock-extended';
 import request from 'supertest';
 import { SAFE_LIST_LIMIT } from '../src/common/constants/pagination';
@@ -37,7 +38,7 @@ describe('GET /tags e GET /events/tags-map (e2e)', () => {
 
   beforeEach(() => {
     prisma.tag.findMany.mockReset();
-    prisma.eventoTag.findMany.mockReset();
+    prisma.$queryRaw.mockReset();
   });
 
   describe('GET /tags', () => {
@@ -104,9 +105,11 @@ describe('GET /tags e GET /events/tags-map (e2e)', () => {
     });
 
     it('retorna 200 e um objeto { eventoId: Tag[] }', async () => {
-      prisma.eventoTag.findMany.mockResolvedValue([
-        { evento_id: 'evento-1', tag: buildTag() },
-      ] as never);
+      const tag = buildTag();
+      prisma.$queryRaw.mockResolvedValue([
+        { evento_id: 'evento-1', tag_ids: [tag.id] },
+      ]);
+      prisma.tag.findMany.mockResolvedValue([tag] as never);
 
       const response = await request(server).get('/events/tags-map');
       const body = response.body as Record<string, ResponseBody[]>;
@@ -117,7 +120,8 @@ describe('GET /tags e GET /events/tags-map (e2e)', () => {
     });
 
     it('retorna objeto vazio quando não há nenhuma associação evento-tag', async () => {
-      prisma.eventoTag.findMany.mockResolvedValue([]);
+      prisma.$queryRaw.mockResolvedValue([]);
+      prisma.tag.findMany.mockResolvedValue([]);
 
       const response = await request(server).get('/events/tags-map');
 
@@ -126,19 +130,18 @@ describe('GET /tags e GET /events/tags-map (e2e)', () => {
     });
 
     it('só considera evento_tags de eventos publicados', async () => {
-      prisma.eventoTag.findMany.mockResolvedValue([]);
+      prisma.$queryRaw.mockResolvedValue([]);
+      prisma.tag.findMany.mockResolvedValue([]);
 
       await request(server).get('/events/tags-map');
 
-      // eslint-disable-next-line @typescript-eslint/unbound-method -- mock do jest-mock-extended
-      expect(prisma.eventoTag.findMany).toHaveBeenCalledWith({
-        where: { evento: { status: 'publicado' } },
-        select: { evento_id: true, tag: true },
-      });
+      const [query] = prisma.$queryRaw.mock.calls[0] as unknown as [Prisma.Sql];
+      expect(query.sql).toContain("e.status = 'publicado'");
     });
 
     it('retorna o header Cache-Control configurado', async () => {
-      prisma.eventoTag.findMany.mockResolvedValue([]);
+      prisma.$queryRaw.mockResolvedValue([]);
+      prisma.tag.findMany.mockResolvedValue([]);
 
       const response = await request(server).get('/events/tags-map');
 

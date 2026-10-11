@@ -263,9 +263,12 @@ describe('Contrato de resposta — GET /tags e GET /events/tags-map', () => {
     ({ app, server, prisma } = await createTestApp());
 
     prisma.tag.findMany.mockResolvedValue([buildTagRow()] as never);
-    prisma.eventoTag.findMany.mockResolvedValue([
-      { evento_id: '11111111-1111-1111-1111-111111111111', tag: buildTagRow() },
-    ] as never);
+    prisma.$queryRaw.mockResolvedValue([
+      {
+        evento_id: '11111111-1111-1111-1111-111111111111',
+        tag_ids: [buildTagRow().id],
+      },
+    ]);
   });
 
   afterAll(async () => {
