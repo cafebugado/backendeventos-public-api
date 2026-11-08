@@ -53,3 +53,12 @@ test('campo de embed nunca passa de 1024 caracteres', async () => {
   assert.equal(fitField([]), '—');
   assert.equal(fitField(['a', 'b']), 'a\nb');
 });
+
+test('remove comentários HTML, inclusive aninhados e sem fechamento', async () => {
+  const { stripHtmlComments } = await import('./lib.mjs');
+  assert.equal(stripHtmlComments('a<!-- x -->b'), 'ab');
+  assert.equal(stripHtmlComments('<!<!-- x -->-- y -->z'), 'z');
+  assert.equal(stripHtmlComments('a<!-- sem fim'), 'a');
+  assert.ok(!stripHtmlComments('<!<!--<!-- -->-->--').includes('<!--'));
+  assert.equal(stripHtmlComments('Array<string> e x --> y'), 'Array<string> e x --> y');
+});

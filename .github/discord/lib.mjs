@@ -114,9 +114,23 @@ export function mentionIds(logins, cfg) {
   return logins.map((l) => cfg.users?.[l]).filter(Boolean);
 }
 
+/**
+ * Remove comentários HTML (instruções dos templates de issue/PR).
+ * Repete até não sobrar nenhum "<!--", inclusive os formados pela remoção.
+ * Comentário sem fechamento: descarta o resto, como o GitHub faz ao renderizar.
+ */
+export function stripHtmlComments(text) {
+  let s = text;
+  for (;;) {
+    const start = s.indexOf('<!--');
+    if (start === -1) return s;
+    const end = s.indexOf('-->', start + 4);
+    s = end === -1 ? s.slice(0, start) : s.slice(0, start) + s.slice(end + 3);
+  }
+}
+
 export function excerpt(body, max = 700) {
-  const clean = (body ?? '')
-    .replace(/<!--[\s\S]*?-->/g, '')
+  const clean = stripHtmlComments(body ?? '')
     .replace(/\r/g, '')
     .replace(/\n{3,}/g, '\n\n')
     .trim();

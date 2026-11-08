@@ -229,6 +229,7 @@ async function onReview(p) {
   if (p.action !== 'submitted') return;
   const { review } = p;
   const state = review.state.toLowerCase();
+  if (review.user.type === 'Bot') return; // ex.: comentários automáticos do CodeQL
   if (state === 'commented' && !review.body) return; // comentários de linha já aparecem no GitHub
   const ctx = await prContext(p.pull_request.number);
   const threadId = await syncPr(ctx);

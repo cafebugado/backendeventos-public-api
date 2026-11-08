@@ -34,6 +34,7 @@ jobs:
 
       - name: Verificar /health
         id: check
+        if: hashFiles('.github/discord/notify.mjs') != ''
         run: node .github/discord/notify.mjs health
         env:
           DISCORD_CONFIG: ${{ vars.DISCORD_CONFIG }}

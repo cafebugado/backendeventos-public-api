@@ -39,15 +39,18 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      # Em eventos de PR usa sempre o script da branch padrão (nunca o código do PR).
+      # Em eventos de PR nunca usa o código do PR: pull_request_target lê a branch
+      # padrão e pull_request_review lê a branch de destino do PR.
       - name: Checkout do script de notificação
         uses: actions/checkout@v7
         with:
-          ref: ${{ (github.event_name == 'pull_request_target' || github.event_name == 'pull_request_review') && github.event.repository.default_branch || github.sha }}
+          ref: ${{ github.event_name == 'pull_request_target' && github.event.repository.default_branch || github.event_name == 'pull_request_review' && github.event.pull_request.base.ref || github.sha }}
           sparse-checkout: .github/discord
           persist-credentials: false
 
       - name: Enviar para o Discord
+        # A branch pode ainda não ter a integração (ex.: antes do merge)
+        if: hashFiles('.github/discord/notify.mjs') != ''
         run: node .github/discord/notify.mjs
         env:
           DISCORD_CONFIG: ${{ vars.DISCORD_CONFIG || secrets.DISCORD_CONFIG }}
