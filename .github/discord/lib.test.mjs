@@ -62,3 +62,17 @@ test('remove comentários HTML, inclusive aninhados e sem fechamento', async () 
   assert.ok(!stripHtmlComments('<!<!--<!-- -->-->--').includes('<!--'));
   assert.equal(stripHtmlComments('Array<string> e x --> y'), 'Array<string> e x --> y');
 });
+
+test('release: pré-release sem ping, estável marca o Lead', async () => {
+  const { releaseInfo, COLORS } = await import('./lib.mjs');
+  assert.deepEqual(releaseInfo({ tag_name: 'v0.1.0-dev.1', name: 'v0.1.0-dev.1', prerelease: true }), {
+    title: '🧪 Pré-release v0.1.0-dev.1',
+    color: COLORS.yellow,
+    mentionRoles: [],
+  });
+  assert.deepEqual(releaseInfo({ tag_name: 'v0.1.0', name: '', prerelease: false }), {
+    title: '🏷️ Release v0.1.0',
+    color: COLORS.purple,
+    mentionRoles: ['lead'],
+  });
+});

@@ -1,0 +1,49 @@
+{
+  "branches": [
+    "production",
+    { "name": "development", "prerelease": "dev", "channel": "dev" }
+  ],
+  "tagFormat": "v${version}",
+  "plugins": [
+    [
+      "@semantic-release/commit-analyzer",
+      {
+        "preset": "conventionalcommits",
+        "releaseRules": [
+          { "breaking": true, "release": "minor" },
+          { "type": "refactor", "release": false },
+          { "type": "docs", "release": false }
+        ]
+      }
+    ],
+    [
+      "@semantic-release/release-notes-generator",
+      {
+        "preset": "conventionalcommits",
+        "presetConfig": {
+          "types": [
+            { "type": "feat", "section": "✨ Novidades" },
+            { "type": "fix", "section": "🐛 Correções" },
+            { "type": "perf", "section": "⚡ Performance" },
+            { "type": "revert", "section": "⏪ Reversões" },
+            { "type": "refactor", "section": "♻️ Refatorações", "hidden": false },
+            { "type": "docs", "section": "📝 Documentação", "hidden": false },
+            { "type": "test", "hidden": true },
+            { "type": "build", "hidden": true },
+            { "type": "chore", "hidden": true },
+            { "type": "ci", "hidden": true },
+            { "type": "style", "hidden": true }
+          ]
+        }
+      }
+    ],
+    [
+      "@semantic-release/github",
+      {
+        "successComment": false,
+        "failComment": false,
+        "releasedLabels": false
+      }
+    ]
+  ]
+}
