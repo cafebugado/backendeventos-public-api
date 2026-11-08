@@ -33,3 +33,6 @@ prisma/setup-readonly-role.sql
 
 # Documento interno de planejamento — não deve ir para o repositório/produção.
 SPRINT.md
+
+# Estado local do monitor de health (GitHub Actions)
+.health-state.json
