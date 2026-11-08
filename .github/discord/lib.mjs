@@ -169,6 +169,17 @@ export const COLORS = {
   blurple: 0x5865f2,
 };
 
+/**
+ * Como anunciar uma release no #api-github: pré-release (development) sai em
+ * amarelo e sem ping; release estável (production) sai em roxo e marca o @Lead.
+ */
+export function releaseInfo(release) {
+  const name = release.name || release.tag_name;
+  return release.prerelease
+    ? { title: `🧪 Pré-release ${name}`, color: COLORS.yellow, mentionRoles: [] }
+    : { title: `🏷️ Release ${name}`, color: COLORS.purple, mentionRoles: ['lead'] };
+}
+
 // ---------- Tags ----------
 
 const ISSUE_LABEL_TAG = {
