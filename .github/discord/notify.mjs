@@ -303,7 +303,7 @@ async function onWorkflowRun(p) {
   if (failed) {
     const jobs = await failedJobs(run.id);
     await webhook(hooks.alertas, {
-      content: `${roleMention('dev')} ❌ **${run.name}** falhou em \`${run.head_branch}\``,
+      content: `${roleMention('lead', 'dev')} ❌ **${run.name}** falhou em \`${run.head_branch}\``,
       username: 'GitHub · Alertas',
       avatar_url: AVATAR,
       embeds: [{
@@ -317,7 +317,7 @@ async function onWorkflowRun(p) {
         ],
         timestamp: run.updated_at,
       }],
-      ...pings({ roles: ['dev'] }),
+      ...pings({ roles: ['lead', 'dev'] }),
     });
   } else {
     // voltou a passar depois de uma falha?
