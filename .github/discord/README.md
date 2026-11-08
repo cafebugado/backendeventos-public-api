@@ -10,7 +10,7 @@ Só observa eventos: não roda código de PR, não altera o repositório e nunca
 |---|---|
 | `#api-tarefas` (fórum) | Um post por **issue**. Tags seguem as labels (P0–P3, tipo), 🚧 quando há responsável, ✅ e arquivado ao fechar. Comentários da issue entram no post. |
 | `#api-prs` (fórum) | Um post por **PR**: review pedido (menciona o reviewer), aprovado / mudanças pedidas (menciona o autor), CI, preview da Vercel, merge. Arquivado ao fechar. |
-| `#api-github` | Commits em `development` e `production`, releases. |
+| `#api-github` | Commits em `development` e `production`, releases: 🧪 pré-release de `development` (amarela, sem menção) e 🏷️ release estável de `production` (roxa, menciona @Lead). |
 | `#api-deploys` | Deploys da Vercel (produção, desenvolvimento e previews). |
 | `#api-alertas` | CI/CodeQL quebrado em `development`/`production` (@Lead @Dev), deploy de produção falhou e produção fora do ar (@Lead @Dev), desenvolvimento fora do ar (só texto). |
 | `#api-geral` | Resumo semanal (segunda, 09:00). |

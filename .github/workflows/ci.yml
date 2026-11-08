@@ -13,11 +13,15 @@ on:
 permissions:
   contents: read
 
-# Cancela execuções antigas do mesmo PR/branch quando um novo push chega —
-# evita gastar minutos de CI rodando um commit que já foi substituído.
+# Em PR, cancela execuções antigas quando um novo push chega — evita gastar
+# minutos de CI rodando um commit que já foi substituído.
+# Em push para development/production NÃO cancela: o job `release` pode estar
+# no meio da criação de uma tag/release, e interromper deixaria uma tag sem
+# release. As execuções ficam em fila; se uma chegar com a branch já
+# desatualizada, o semantic-release apenas pula e a próxima publica tudo.
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   lint:
@@ -123,3 +127,88 @@ jobs:
 
       - name: Run e2e tests
         run: npm run test:e2e
+
+  # Gera a release a partir dos commits (Conventional Commits) depois que todo
+  # o CI passou. Só roda em push (merge de PR) para development/production:
+  #   development → pré-release vX.Y.Z-dev.N
+  #   production  → release estável vX.Y.Z (latest)
+  # Configuração em .releaserc.json; detalhes no CONTRIBUTING.md.
+  release:
+    name: release
+    if: github.event_name == 'push'
+    needs: [lint, build, unit-tests, e2e-tests]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # O GITHUB_TOKEN deste job continua somente leitura: tag, release e PR de
+    # sincronização são criados com o token do GitHub App, para que o evento
+    # `release: published` dispare o workflow do Discord e o PR rode o CI
+    # (ações feitas com o GITHUB_TOKEN não disparam outros workflows).
+    permissions:
+      contents: read
+    concurrency:
+      group: release-${{ github.ref }}
+      cancel-in-progress: false
+    steps:
+      - name: Gerar token do GitHub App
+        id: app
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ vars.RELEASE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # precisa do histórico e das tags para calcular a versão
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: semantic-release
+        run: npx semantic-release
+        env:
+          GITHUB_TOKEN: ${{ steps.app.outputs.token }}
+
+      # A tag estável fica no merge commit de production, que não existe em
+      # development. Sem trazer production de volta, as próximas pré-releases
+      # continuariam na versão antiga (ex.: v0.1.0-dev.4 depois da v0.2.0).
+      # Por isso, a cada release estável, abre um PR production → development
+      # (que deve entrar com MERGE COMMIT, nunca squash).
+      - name: Abrir PR de sincronização production → development
+        if: github.ref == 'refs/heads/production'
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+        shell: bash
+        run: |
+          # Tag estável (sem sufixo -dev.N) criada pelo semantic-release neste commit
+          TAG=$(git tag --points-at HEAD --list 'v*' | { grep -v -- '-' || true; } | sort -V | tail -1)
+          if [ -z "$TAG" ]; then
+            echo "Nenhuma release estável neste commit; nada para sincronizar."
+            exit 0
+          fi
+          AHEAD=$(gh api "repos/${{ github.repository }}/compare/development...production" --jq '.ahead_by')
+          if [ "$AHEAD" = "0" ]; then
+            echo "development já contém production; nada para sincronizar."
+            exit 0
+          fi
+          OPEN=$(gh pr list --base development --head production --state open --json number --jq 'length')
+          if [ "$OPEN" != "0" ]; then
+            echo "Já existe um PR de sincronização aberto."
+            exit 0
+          fi
+          gh pr create --base development --head production \
+            --title "chore: sincroniza production em development ($TAG)" \
+            --body "Traz a release **$TAG** de \`production\` de volta para \`development\`.
+
+          Sem este merge, as próximas pré-releases de \`development\` continuariam calculando a versão a partir da release anterior.
+
+          > ⚠️ Fazer o merge com **Create a merge commit** (nunca squash), senão a tag \`$TAG\` não passa a fazer parte do histórico de \`development\`.
+
+          _PR aberto automaticamente pelo job \`release\` do CI._"

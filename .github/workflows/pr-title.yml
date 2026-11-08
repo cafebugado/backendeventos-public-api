@@ -1,0 +1,42 @@
+name: PR title
+
+# Os PRs entram em development por squash, então o TÍTULO do PR vira a
+# mensagem do commit que o semantic-release analisa para calcular a versão.
+# O commitlint (Husky) só valida commits locais; este check valida o título.
+# Só lê o evento (não faz checkout do código do PR), por isso é seguro usar
+# pull_request_target.
+
+on:
+  pull_request_target:
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  pull-requests: read
+
+jobs:
+  pr-title:
+    name: pr-title
+    runs-on: ubuntu-latest
+    steps:
+      - uses: amannn/action-semantic-pull-request@v6
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          # Mesmos tipos do @commitlint/config-conventional
+          types: |
+            feat
+            fix
+            docs
+            style
+            refactor
+            perf
+            test
+            build
+            ci
+            chore
+            revert
+          # Igual à regra subject-case do commitlint: não começar com maiúscula
+          subjectPattern: ^(?![A-Z]).+$
+          subjectPatternError: |
+            A descrição "{subject}" do título do PR não pode começar com letra maiúscula.
+            Exemplo: "fix(events): corrige fuso de brasília".

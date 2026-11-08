@@ -28,6 +28,7 @@ import {
   tagNamesFromIds,
   findThread,
   updateThread,
+  releaseInfo,
 } from './lib.mjs';
 
 const cfg = loadConfig();
@@ -416,17 +417,20 @@ async function onPush(p) {
 async function onRelease(p) {
   if (p.action !== 'published') return;
   const r = p.release;
+  const info = releaseInfo(r);
   await webhook(hooks.github, {
+    ...(info.mentionRoles.length ? { content: `${roleMention(...info.mentionRoles)} nova versão publicada em produção.` } : {}),
     username: 'GitHub',
     avatar_url: AVATAR,
     embeds: [{
-      title: `🏷️ Release ${r.name || r.tag_name}`,
+      title: info.title,
       url: r.html_url,
-      color: COLORS.purple,
+      color: info.color,
       description: excerpt(r.body, 1500),
       footer: { text: `por ${r.author.login}` },
       timestamp: r.published_at,
     }],
+    ...pings({ roles: info.mentionRoles }),
   });
 }
 
