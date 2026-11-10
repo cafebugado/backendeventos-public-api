@@ -112,6 +112,86 @@ abre automaticamente o PR **`chore: sincroniza production em development (vX.Y.Z
 gh release delete vX.Y.Z --cleanup-tag
 ```
 
+## Ambiente local com Docker
+
+Para rodar a API com dados, **ninguém precisa de credencial do Supabase**. O
+`docker compose` sobe um Postgres na sua máquina com o mesmo schema da
+produção, dados fictícios e a mesma role somente leitura
+(`public_api_readonly`). O banco de produção nunca é tocado.
+
+Pré-requisitos: Node 22 (`.nvmrc`) e Docker Desktop (ou Docker Engine) rodando.
+
+```bash
+git clone https://github.com/cafebugado/backendeventos-public-api.git
+cd backendeventos-public-api
+cp .env.example .env     # já vem apontando para o banco local, não precisa editar
+npm install
+npm run db:up            # sobe o Postgres em localhost:5433 com schema + seed
+npm run start:dev        # API em http://localhost:3000, Swagger em /docs
+```
+
+Para conferir se está tudo certo, com a API rodando, em outro terminal:
+
+```bash
+npm run test:smoke       # ~22 verificações contra a API + banco local
+```
+
+### Comandos do banco local
+
+| Comando | O que faz |
+|---|---|
+| `npm run db:up` | Sobe o banco (cria e popula na primeira vez). |
+| `npm run db:down` | Para o banco, mantendo os dados. |
+| `npm run db:reset` | Apaga tudo e recria do zero (schema + seed). |
+| `npm run db:logs` | Mostra os logs do Postgres (erros de init aparecem aqui). |
+| `npm run db:psql` | Abre um `psql` como superusuário dentro do container. |
+| `npm run db:schema` | Regenera `docker/postgres/init/01-schema.sql` a partir do `schema.prisma`. |
+
+### Como o banco local é montado
+
+Os arquivos de `docker/postgres/init/` rodam em ordem, **só quando o volume
+está vazio** (primeiro `db:up` ou depois de um `db:reset`):
+
+| Arquivo | Conteúdo | Quem mantém |
+|---|---|---|
+| `01-schema.sql` | Tabelas, índices e FKs | **Gerado** do `prisma/schema.prisma` (`npm run db:schema`). Não edite à mão. |
+| `02-constraints.sql` | Defaults de `id` e CHECK constraints que o Prisma não descreve | À mão |
+| `03-readonly-role.sql` | Role `public_api_readonly` (senha local `readonly_local`) | À mão |
+| `04-seed.sql` | Dados fictícios. Datas relativas ao dia de criação do banco | À mão |
+
+O seed cobre de propósito os casos das regras da API: eventos `rascunho`,
+`recusado` e `em_analise` (que nunca podem aparecer), um evento passado, um
+com data "A definir", álbum de galeria ligado a rascunho etc. **Nunca coloque
+dados reais da produção no seed**, porque o repositório é público.
+
+### Quando mudar o `schema.prisma`
+
+Na mesma PR:
+
+1. `npm run db:schema` para regenerar o `01-schema.sql` (o job `db-schema` do CI
+   falha se você esquecer).
+2. Coluna nova `NOT NULL` sem default? Inclua-a nos `INSERT` do `04-seed.sql`.
+   Senão o banco não sobe (o job `smoke-local` do CI também pega isso).
+3. CHECK constraint ou default novo no banco real? Atualize o `02-constraints.sql`.
+4. `npm run db:reset && npm run start:dev` e depois `npm run test:smoke`. Se mudou a
+   quantidade de registros do seed, ajuste as contagens em
+   `scripts/smoke-local.mjs`.
+
+Depois de um `git pull` que mexeu em `docker/postgres/init/`, rode
+`npm run db:reset`. O volume antigo não é atualizado sozinho.
+
+### Problemas comuns
+
+| Sintoma | Causa provável | Como resolver |
+|---|---|---|
+| `db:up` termina com "O banco local não ficou pronto" | Um `.sql` do init falhou | `npm run db:logs`, procure `ERROR` (mostra arquivo e linha), corrija e rode `npm run db:reset` |
+| `db:up` falha logo depois de um init que deu erro | Volume ficou pela metade e o init não roda de novo | `npm run db:reset` |
+| `error during connect` / `dockerDesktopLinuxEngine` | Docker Desktop fechado | Abra o Docker Desktop e espere ficar "running" |
+| `port is already allocated` na 5433 | Outra coisa usando a porta | `DB_PORT=5440 npm run db:up` e troque a porta no `.env` |
+| `column "x" does not exist` na API | Banco criado antes de uma mudança de schema | `npm run db:reset` |
+| `/events/upcoming` vazio | Banco criado há muito tempo e as datas do seed já passaram | `npm run db:reset` |
+| `permission denied for table ...` | Algo tentou escrever no banco: a role é somente leitura **de propósito** | Esta API não escreve. Reveja o código |
+
 ## Rodando localmente antes de abrir a PR
 
 ```bash
@@ -121,11 +201,12 @@ npm run lint          # com --fix, corrige o que der automaticamente
 npm run build
 npm run test:cov      # unitários + cobertura (mínimo 80% em events/tags/contributors/gallery)
 npm run test:e2e
+npm run db:schema:check   # só se mexeu no schema.prisma
 ```
 
-Os testes (unitários e e2e) usam o Prisma totalmente mockado — não é
-necessário ter um banco de dados real nem credenciais do Supabase para
-rodá-los localmente.
+Os testes unitários e e2e usam o Prisma totalmente mockado, então não
+precisam de banco nenhum. O `npm run test:smoke` (seção acima) é o único que
+roda contra um Postgres de verdade.
 
 ## O que o CI valida
 
@@ -136,8 +217,12 @@ Em todo PR e push para `development`/`production`, o workflow `CI`
 - **`build`** — `prisma generate` + `nest build`
 - **`unit-tests`** — testes unitários com cobertura mínima obrigatória
 - **`e2e-tests`** — testes end-to-end
+- **`db-schema`** — confere se `docker/postgres/init/01-schema.sql` está em
+  dia com o `prisma/schema.prisma`
+- **`smoke-local`** — sobe o Postgres local (schema + seed), inicia a API e
+  roda `npm run test:smoke` contra ela
 - **`release`** — só em push para `development`/`production`, depois dos
-  quatro acima: gera a release (veja "Versionamento e releases")
+  seis acima: gera a release (veja "Versionamento e releases")
 
 Em PRs com destino `production`, o workflow `Verify PR Source Branch`
 (`.github/workflows/verify-pr-source.yml`) também roda e bloqueia o merge

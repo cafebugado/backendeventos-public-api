@@ -1,0 +1,36 @@
+# Postgres local para desenvolvimento — dados fictícios, sem acesso à produção.
+# Uso: npm run db:up  |  npm run db:reset  |  npm run db:down
+# Detalhes em CONTRIBUTING.md ("Ambiente local com Docker").
+services:
+  db:
+    # Mesma major do Postgres dos projetos Supabase novos.
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+      TZ: America/Sao_Paulo
+      PGTZ: America/Sao_Paulo
+    ports:
+      # 5433 no host para não brigar com um Postgres já instalado na máquina.
+      # Para trocar: DB_PORT=5440 npm run db:up (e ajuste o .env).
+      - '${DB_PORT:-5433}:5432'
+    volumes:
+      # Scripts rodam em ordem alfabética, SÓ quando o volume está vazio.
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      # Só fica "healthy" depois que o seed rodou E o servidor definitivo subiu.
+      # Usa TCP (-h 127.0.0.1) de propósito: durante o init o Postgres roda um
+      # servidor temporário só por socket, que reinicia ao final dos scripts.
+      test:
+        [
+          'CMD-SHELL',
+          "psql -h 127.0.0.1 -U postgres -tAc 'SELECT 1 FROM galeria_fotos LIMIT 1' | grep -q 1",
+        ]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+volumes:
+  db-data:

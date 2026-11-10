@@ -56,34 +56,34 @@ Controller (NestJS) -> Service (regra de negócio) -> Repository (interface + im
 
 ## Configuração
 
-Copie `.env.example` para `.env` e preencha:
+Copie `.env.example` para `.env`. Para desenvolver, **não precisa editar nada**: ele já
+aponta para o Postgres local do Docker.
 
 - `PORT`: porta local (default `3000`).
 - `CORS_ORIGINS`: origens do frontend liberadas no CORS, separadas por vírgula.
-- `DATABASE_URL`: pooler transacional do Supabase (porta `6543`, `pgbouncer=true&connection_limit=1`)
-  — usada pela aplicação em runtime.
-- `DIRECT_URL`: conexão direta ao Postgres (porta `5432`) — usada **só** por
-  `npx prisma db pull` / `migrate`, nunca pela aplicação.
+- `DATABASE_URL`: em dev, o banco local (`localhost:5433`). Em produção, o pooler
+  transacional do Supabase (porta `6543`, `pgbouncer=true&connection_limit=1`).
+- `DIRECT_URL`: em dev, o mesmo banco local. Em produção, a conexão direta ao Postgres
+  (porta `5432`), usada **só** por `npx prisma db pull` / `migrate`, nunca pela aplicação.
 
-**Antes de preencher `DATABASE_URL`/`DIRECT_URL`**, crie a role dedicada somente-leitura no
-SQL Editor do seu projeto Supabase rodando [`prisma/setup-readonly-role.sql`](prisma/setup-readonly-role.sql)
-(troque a senha placeholder antes de rodar). O arquivo já inclui uma query de verificação
-(confirma que a role não é superusuário/bypass-RLS) e um `INSERT` comentado para você provar
-manualmente, se quiser, que a role realmente não escreve.
-
-Use as credenciais dessa role (nunca a role privilegiada do `D:\backendeventos`) nas duas
-connection strings.
+As credenciais do Supabase só existem nas variáveis de ambiente do deploy. A role de
+produção é criada pelo mantenedor com o script `prisma/setup-readonly-role.sql`, que fica
+fora do Git (gitignorado). Esse script não faz parte do setup de quem contribui.
 
 ## Rodando localmente
 
+Precisa de Node 22 e Docker. Sem credenciais, sem acesso à produção:
+
 ```bash
 npm install
-cp .env.example .env   # preencha DATABASE_URL, DIRECT_URL e CORS_ORIGINS
-npx prisma generate
+cp .env.example .env   # já aponta para o banco local
+npm run db:up          # Postgres com schema + dados fictícios em localhost:5433
 npm run start:dev
 ```
 
 A API sobe em `http://localhost:3000`. Swagger em `http://localhost:3000/docs`.
+Detalhes do banco local, comandos e solução de problemas: veja
+[CONTRIBUTING.md › Ambiente local com Docker](CONTRIBUTING.md#ambiente-local-com-docker).
 
 ## Testes
 
@@ -95,7 +95,9 @@ npm run lint
 ```
 
 Todos os testes (unitários e e2e) usam um `PrismaService` mockado (`jest-mock-extended`) —
-rodam completos sem exigir conexão real ao Supabase.
+rodam completos sem exigir conexão real ao Supabase. Para testar contra um Postgres de
+verdade, use o banco local: `npm run db:up`, `npm run start:dev` e, em outro terminal,
+`npm run test:smoke`.
 
 ## Endpoints implementados
 
