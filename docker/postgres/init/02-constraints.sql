@@ -15,9 +15,9 @@ ALTER TABLE galeria_albuns ALTER COLUMN id SET DEFAULT gen_random_uuid();
 ALTER TABLE galeria_fotos  ALTER COLUMN id SET DEFAULT gen_random_uuid();
 ALTER TABLE comunidades    ALTER COLUMN id SET DEFAULT gen_random_uuid();
 
--- CHECK constraints reais (documentadas nos comentários do schema.prisma).
+-- CHECK constraints reais, com os mesmos nomes da produção (conferido em 2026-11-13).
 ALTER TABLE eventos ADD CONSTRAINT eventos_periodo_check
   CHECK (periodo IN ('Matinal', 'Diurno', 'Vespertino', 'Noturno'));
 
-ALTER TABLE eventos ADD CONSTRAINT eventos_status_check
+ALTER TABLE eventos ADD CONSTRAINT ck_eventos_status
   CHECK (status IN ('rascunho', 'publicado', 'arquivado', 'em_analise', 'recusado'));
