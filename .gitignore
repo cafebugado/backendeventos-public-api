@@ -21,9 +21,10 @@ npm-debug.log*
 *.launch
 /.settings
 
-# Env
-.env
-.env.local
+# Env: qualquer .env* (.env, .env.local, .env.production, .env.backup...) fica
+# fora do Git. Só o modelo sem segredos é versionado.
+.env*
+!.env.example
 
 # Prisma
 prisma/*.db

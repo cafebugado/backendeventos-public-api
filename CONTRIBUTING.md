@@ -192,6 +192,28 @@ Depois de um `git pull` que mexeu em `docker/postgres/init/`, rode
 | `/events/upcoming` vazio | Banco criado há muito tempo e as datas do seed já passaram | `npm run db:reset` |
 | `permission denied for table ...` | Algo tentou escrever no banco: a role é somente leitura **de propósito** | Esta API não escreve. Reveja o código |
 
+## Credenciais e arquivos `.env`
+
+O repositório é **público**. Credenciais de produção existem só nas variáveis
+de ambiente da Vercel e não são necessárias para desenvolver: o banco local do
+Docker cobre isso.
+
+Há duas proteções automáticas:
+
+- **`.gitignore`:** qualquer `.env*` é ignorado, exceto o `.env.example`.
+- **Hook `pre-commit` + CI:** `scripts/check-secrets.mjs` recusa o commit (e
+  falha o job `lint` do CI) se encontrar:
+  - um arquivo `.env*` versionado (mesmo com `git add -f`);
+  - uma URL de conexão do Supabase com senha de verdade em qualquer arquivo.
+    Em documentação e exemplos, use um placeholder no lugar da senha (`senha`,
+    `SENHA`, `password`, `[YOUR-PASSWORD]` ou `DEFINA-UMA-SENHA-FORTE`).
+
+Para rodar a checagem no repositório inteiro: `npm run check:secrets`.
+
+Se uma credencial chegou a ser commitada, **tirá-la do arquivo não basta**: ela
+continua no histórico do Git. Avise quem administra o banco para **trocar a
+senha** imediatamente.
+
 ## Rodando localmente antes de abrir a PR
 
 ```bash
@@ -213,7 +235,8 @@ roda contra um Postgres de verdade.
 Em todo PR e push para `development`/`production`, o workflow `CI`
 (`.github/workflows/ci.yml`) roda em paralelo:
 
-- **`lint`** — ESLint sem `--fix` (falha se houver algo para corrigir)
+- **`lint`** — ESLint sem `--fix` (falha se houver algo para corrigir) e
+  busca de credenciais versionadas (`npm run check:secrets`)
 - **`build`** — `prisma generate` + `nest build`
 - **`unit-tests`** — testes unitários com cobertura mínima obrigatória
 - **`e2e-tests`** — testes end-to-end

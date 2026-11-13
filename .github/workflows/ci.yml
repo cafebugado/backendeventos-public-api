@@ -49,6 +49,11 @@ jobs:
       - name: Run ESLint (no --fix)
         run: npm run lint:check
 
+      # Mesma checagem do pre-commit, mas no repositório inteiro: pega também
+      # quem commitou com --no-verify ou sem os hooks instalados.
+      - name: Procurar credenciais versionadas
+        run: npm run check:secrets
+
   build:
     name: build
     runs-on: ubuntu-latest
