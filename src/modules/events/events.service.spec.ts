@@ -1,3 +1,4 @@
+import type { Mocked } from 'vitest';
 import { NotFoundException } from '@nestjs/common';
 import { Evento, Tag } from '@prisma/client';
 import {
@@ -73,22 +74,22 @@ function buildEventoFeatured(
 describe('EventsService', () => {
   function createService(): {
     service: EventsService;
-    repo: jest.Mocked<IEventoRepository>;
-    tagRepo: jest.Mocked<ITagRepository>;
+    repo: Mocked<IEventoRepository>;
+    tagRepo: Mocked<ITagRepository>;
   } {
-    const repo: jest.Mocked<IEventoRepository> = {
-      findPublished: jest.fn(),
-      findFeatured: jest.fn(),
-      findUpcoming: jest.fn(),
-      findFeaturedByIds: jest.fn(),
-      findRecommendationCandidates: jest.fn(),
-      findBySlugOrId: jest.fn(),
-      countPublished: jest.fn(),
+    const repo: Mocked<IEventoRepository> = {
+      findPublished: vi.fn(),
+      findFeatured: vi.fn(),
+      findUpcoming: vi.fn(),
+      findFeaturedByIds: vi.fn(),
+      findRecommendationCandidates: vi.fn(),
+      findBySlugOrId: vi.fn(),
+      countPublished: vi.fn(),
     };
-    const tagRepo: jest.Mocked<ITagRepository> = {
-      findAll: jest.fn(),
-      findEventTagsMap: jest.fn(),
-      findTagsForEvento: jest.fn(),
+    const tagRepo: Mocked<ITagRepository> = {
+      findAll: vi.fn(),
+      findEventTagsMap: vi.fn(),
+      findTagsForEvento: vi.fn(),
     };
     return { service: new EventsService(repo, tagRepo), repo, tagRepo };
   }
@@ -111,7 +112,7 @@ describe('EventsService', () => {
       modalidade: 'Online',
     });
 
-    // eslint-disable-next-line @typescript-eslint/unbound-method -- jest.fn() em interface, não é um método de classe real
+    // eslint-disable-next-line @typescript-eslint/unbound-method -- vi.fn() em interface, não é um método de classe real
     expect(repo.findPublished).toHaveBeenCalledWith({
       limit: 5,
       offset: 10,
@@ -126,7 +127,7 @@ describe('EventsService', () => {
 
     await service.getPublished();
 
-    // eslint-disable-next-line @typescript-eslint/unbound-method -- jest.fn() em interface, não é um método de classe real
+    // eslint-disable-next-line @typescript-eslint/unbound-method -- vi.fn() em interface, não é um método de classe real
     expect(repo.findPublished).toHaveBeenCalledWith(undefined);
   });
 
@@ -167,7 +168,7 @@ describe('EventsService', () => {
 
       await service.getFeatured(5);
 
-      // eslint-disable-next-line @typescript-eslint/unbound-method -- jest.fn() em interface, não é um método de classe real
+      // eslint-disable-next-line @typescript-eslint/unbound-method -- vi.fn() em interface, não é um método de classe real
       expect(repo.findFeatured).toHaveBeenCalledWith(5);
     });
 
@@ -177,7 +178,7 @@ describe('EventsService', () => {
 
       await service.getFeatured();
 
-      // eslint-disable-next-line @typescript-eslint/unbound-method -- jest.fn() em interface, não é um método de classe real
+      // eslint-disable-next-line @typescript-eslint/unbound-method -- vi.fn() em interface, não é um método de classe real
       expect(repo.findFeatured).toHaveBeenCalledWith(3);
     });
 
@@ -210,7 +211,7 @@ describe('EventsService', () => {
 
       await service.getBySlugOrId('meetup-cafe-bugado');
 
-      // eslint-disable-next-line @typescript-eslint/unbound-method -- jest.fn() em interface, não é um método de classe real
+      // eslint-disable-next-line @typescript-eslint/unbound-method -- vi.fn() em interface, não é um método de classe real
       expect(repo.findBySlugOrId).toHaveBeenCalledWith('meetup-cafe-bugado');
     });
 
@@ -263,7 +264,7 @@ describe('EventsService', () => {
 
       await service.getEventTags('11111111-1111-1111-1111-111111111111');
 
-      // eslint-disable-next-line @typescript-eslint/unbound-method -- jest.fn() em interface, não é um método de classe real
+      // eslint-disable-next-line @typescript-eslint/unbound-method -- vi.fn() em interface, não é um método de classe real
       expect(repo.findBySlugOrId).toHaveBeenCalledWith(
         '11111111-1111-1111-1111-111111111111',
       );
@@ -311,7 +312,7 @@ describe('EventsService', () => {
 
       await service.getDetailBySlugOrId('meetup-cafe-bugado');
 
-      // eslint-disable-next-line @typescript-eslint/unbound-method -- jest.fn() em interface, não é um método de classe real
+      // eslint-disable-next-line @typescript-eslint/unbound-method -- vi.fn() em interface, não é um método de classe real
       expect(tagRepo.findTagsForEvento).toHaveBeenCalledWith(
         '11111111-1111-1111-1111-111111111111',
       );
@@ -360,18 +361,18 @@ describe('EventsService', () => {
 
   describe('getUpcoming', () => {
     afterEach(() => {
-      jest.useRealTimers();
+      vi.useRealTimers();
     });
 
     it('busca os eventos a partir do hoje de Brasília e repassa os filtros', async () => {
       // 02:30 UTC de 02/10 = 23:30 de 01/10 em Brasília.
-      jest.useFakeTimers().setSystemTime(new Date('2026-10-02T02:30:00.000Z'));
+      vi.useFakeTimers().setSystemTime(new Date('2026-10-02T02:30:00.000Z'));
       const { service, repo } = createService();
       repo.findUpcoming.mockResolvedValue([]);
 
       await service.getUpcoming({ limit: 10, offset: 20 });
 
-      // eslint-disable-next-line @typescript-eslint/unbound-method -- jest.fn() em interface, não é um método de classe real
+      // eslint-disable-next-line @typescript-eslint/unbound-method -- vi.fn() em interface, não é um método de classe real
       expect(repo.findUpcoming).toHaveBeenCalledWith(
         new Date('2026-10-01T00:00:00.000Z'),
         { limit: 10, offset: 20 },
@@ -510,12 +511,12 @@ describe('EventsService', () => {
 
       await mocks.service.getRecommended('slug-do-evento');
 
-      // eslint-disable-next-line @typescript-eslint/unbound-method -- jest.fn() em interface, não é um método de classe real
+      // eslint-disable-next-line @typescript-eslint/unbound-method -- vi.fn() em interface, não é um método de classe real
       expect(mocks.repo.findRecommendationCandidates).toHaveBeenCalledWith(
         expect.any(Date),
         'uuid-do-evento',
       );
-      // eslint-disable-next-line @typescript-eslint/unbound-method -- jest.fn() em interface, não é um método de classe real
+      // eslint-disable-next-line @typescript-eslint/unbound-method -- vi.fn() em interface, não é um método de classe real
       expect(mocks.tagRepo.findTagsForEvento).toHaveBeenCalledWith(
         'uuid-do-evento',
       );
@@ -523,7 +524,7 @@ describe('EventsService', () => {
 
     describe('virada do dia no fuso de Brasília', () => {
       afterEach(() => {
-        jest.useRealTimers();
+        vi.useRealTimers();
       });
 
       it.each([
@@ -534,7 +535,7 @@ describe('EventsService', () => {
       ])(
         '%s, busca candidatos a partir do dia certo',
         async (_descricao, agora, hojeEsperado) => {
-          jest.useFakeTimers().setSystemTime(new Date(agora));
+          vi.useFakeTimers().setSystemTime(new Date(agora));
           const mocks = createService();
           mockRecommendationData(
             mocks,
@@ -544,7 +545,7 @@ describe('EventsService', () => {
 
           await mocks.service.getRecommended('current');
 
-          // eslint-disable-next-line @typescript-eslint/unbound-method -- jest.fn() em interface, não é um método de classe real
+          // eslint-disable-next-line @typescript-eslint/unbound-method -- vi.fn() em interface, não é um método de classe real
           expect(mocks.repo.findRecommendationCandidates).toHaveBeenCalledWith(
             new Date(`${hojeEsperado}T00:00:00.000Z`),
             'current',
@@ -553,9 +554,7 @@ describe('EventsService', () => {
       );
 
       it('às 23h30 de Brasília, o evento de hoje é o mais próximo (0 dias)', async () => {
-        jest
-          .useFakeTimers()
-          .setSystemTime(new Date('2026-10-02T02:30:00.000Z'));
+        vi.useFakeTimers().setSystemTime(new Date('2026-10-02T02:30:00.000Z'));
         const mocks = createService();
         const hoje = buildEvento({ id: 'hoje', data_evento: '01/10/2026' });
         const amanha = buildEvento({ id: 'amanha', data_evento: '02/10/2026' });
@@ -661,11 +660,11 @@ describe('EventsService', () => {
 
       await mocks.service.getRecommended('current', 2);
 
-      // eslint-disable-next-line @typescript-eslint/unbound-method -- jest.fn() em interface, não é um método de classe real
+      // eslint-disable-next-line @typescript-eslint/unbound-method -- vi.fn() em interface, não é um método de classe real
       expect(mocks.repo.findFeaturedByIds).toHaveBeenCalledWith(['e2', 'e3']);
-      // eslint-disable-next-line @typescript-eslint/unbound-method -- jest.fn() em interface, não é um método de classe real
+      // eslint-disable-next-line @typescript-eslint/unbound-method -- vi.fn() em interface, não é um método de classe real
       expect(mocks.repo.findPublished).not.toHaveBeenCalled();
-      // eslint-disable-next-line @typescript-eslint/unbound-method -- jest.fn() em interface, não é um método de classe real
+      // eslint-disable-next-line @typescript-eslint/unbound-method -- vi.fn() em interface, não é um método de classe real
       expect(mocks.tagRepo.findEventTagsMap).not.toHaveBeenCalled();
     });
 

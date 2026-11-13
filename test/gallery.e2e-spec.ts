@@ -1,6 +1,6 @@
 import type { Server } from 'node:http';
 import { INestApplication } from '@nestjs/common';
-import { DeepMockProxy } from 'jest-mock-extended';
+import { DeepMockProxy } from 'vitest-mock-extended';
 import request from 'supertest';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { createTestApp } from './test-app.helper';
@@ -142,7 +142,7 @@ describe('GET /gallery/albums/public (e2e)', () => {
 
     await request(server).get('/gallery/albums/public');
 
-    // eslint-disable-next-line @typescript-eslint/unbound-method -- mock do jest-mock-extended
+    // eslint-disable-next-line @typescript-eslint/unbound-method -- mock do vitest-mock-extended
     expect(prisma.galeriaAlbum.findMany).toHaveBeenCalledWith(
       expect.objectContaining({ orderBy: { created_at: 'desc' } }),
     );

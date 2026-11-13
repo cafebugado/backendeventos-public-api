@@ -1,3 +1,4 @@
+import type { Mocked } from 'vitest';
 import { EventsController } from './events.controller';
 import { EventsService } from './events.service';
 import { ListPublishedQueryDto } from './dto/list-published-query.dto';
@@ -7,7 +8,7 @@ import { ListUpcomingQueryDto } from './dto/list-upcoming-query.dto';
 describe('EventsController', () => {
   function createController(): {
     controller: EventsController;
-    service: jest.Mocked<
+    service: Mocked<
       Pick<
         EventsService,
         | 'getPublished'
@@ -21,7 +22,7 @@ describe('EventsController', () => {
       >
     >;
   } {
-    const service: jest.Mocked<
+    const service: Mocked<
       Pick<
         EventsService,
         | 'getPublished'
@@ -34,14 +35,14 @@ describe('EventsController', () => {
         | 'getStats'
       >
     > = {
-      getPublished: jest.fn(),
-      getFeatured: jest.fn(),
-      getUpcoming: jest.fn(),
-      getBySlugOrId: jest.fn(),
-      getEventTags: jest.fn(),
-      getRecommended: jest.fn(),
-      getDetailBySlugOrId: jest.fn(),
-      getStats: jest.fn(),
+      getPublished: vi.fn(),
+      getFeatured: vi.fn(),
+      getUpcoming: vi.fn(),
+      getBySlugOrId: vi.fn(),
+      getEventTags: vi.fn(),
+      getRecommended: vi.fn(),
+      getDetailBySlugOrId: vi.fn(),
+      getStats: vi.fn(),
     };
     const controller = new EventsController(
       service as unknown as EventsService,

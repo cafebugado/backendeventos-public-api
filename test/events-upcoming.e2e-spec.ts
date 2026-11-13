@@ -1,7 +1,7 @@
 import type { Server } from 'node:http';
 import { INestApplication } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { DeepMockProxy } from 'jest-mock-extended';
+import { DeepMockProxy } from 'vitest-mock-extended';
 import request from 'supertest';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { createTestApp } from './test-app.helper';
@@ -103,7 +103,7 @@ describe('GET /events/upcoming (e2e)', () => {
       const response = await request(server).get(`/events/upcoming?${query}`);
 
       expect(response.status).toBe(400);
-      // eslint-disable-next-line @typescript-eslint/unbound-method -- mock do jest-mock-extended, não chamada de método real
+      // eslint-disable-next-line @typescript-eslint/unbound-method -- mock do vitest-mock-extended, não chamada de método real
       expect(prisma.$queryRaw).not.toHaveBeenCalled();
     },
   );

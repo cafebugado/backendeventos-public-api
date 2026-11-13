@@ -1,4 +1,13 @@
 {
   "extends": "./tsconfig.json",
-  "exclude": ["node_modules", "test", "dist", "**/*spec.ts"]
+  "exclude": ["node_modules", "test", "dist", "**/*spec.ts", "vitest.config*.ts"],
+  "compilerOptions": {
+    // O TypeScript 6 exige rootDir explícito (TS5011). Saída continua em dist/main.js.
+    "rootDir": "./src",
+    // Código de produção não enxerga os globais de teste (describe, vi, expect).
+    "types": ["node"],
+    // Com o rootDir explícito, o TS 6 grava o arquivo de build incremental na
+    // raiz do projeto. Mantém dentro do dist/, como era no TS 5.
+    "tsBuildInfoFile": "./dist/tsconfig.build.tsbuildinfo"
+  }
 }

@@ -1,3 +1,4 @@
+import type { Mock } from 'vitest';
 import { CallHandler, ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { firstValueFrom, of, throwError } from 'rxjs';
@@ -25,7 +26,7 @@ type AnyController = new () => object;
 function buildContext(
   controller: AnyController,
   handlerName: string,
-  setHeader: jest.Mock,
+  setHeader: Mock,
 ): ExecutionContext {
   const prototype = controller.prototype as Record<string, () => void>;
   return {
@@ -42,7 +43,7 @@ describe('CacheControlInterceptor', () => {
   const next: CallHandler = { handle: () => of([{ id: '1' }]) };
 
   it('usa a janela padrão quando a rota não declara @CacheTtl', async () => {
-    const setHeader = jest.fn();
+    const setHeader = vi.fn();
     const context = buildContext(SemDeclaracaoController, 'rota', setHeader);
 
     await firstValueFrom(interceptor.intercept(context, next));
@@ -54,7 +55,7 @@ describe('CacheControlInterceptor', () => {
   });
 
   it('usa a janela declarada no controller', async () => {
-    const setHeader = jest.fn();
+    const setHeader = vi.fn();
     const context = buildContext(
       ComDeclaracaoController,
       'herdaDoController',
@@ -70,7 +71,7 @@ describe('CacheControlInterceptor', () => {
   });
 
   it('a janela declarada no método sobrepõe a do controller', async () => {
-    const setHeader = jest.fn();
+    const setHeader = vi.fn();
     const context = buildContext(
       ComDeclaracaoController,
       'sobrepoeNoMetodo',
@@ -86,7 +87,7 @@ describe('CacheControlInterceptor', () => {
   });
 
   it('não define o header quando o handler falha', async () => {
-    const setHeader = jest.fn();
+    const setHeader = vi.fn();
     const context = buildContext(SemDeclaracaoController, 'rota', setHeader);
     const failing: CallHandler = {
       handle: () => throwError(() => new Error('falhou')),

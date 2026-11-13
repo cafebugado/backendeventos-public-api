@@ -1,7 +1,7 @@
 import type { Server } from 'node:http';
 import { INestApplication } from '@nestjs/common';
 import { Evento } from '@prisma/client';
-import { DeepMockProxy } from 'jest-mock-extended';
+import { DeepMockProxy } from 'vitest-mock-extended';
 import request from 'supertest';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { createTestApp } from './test-app.helper';
@@ -90,7 +90,7 @@ describe('GET /events/published (e2e)', () => {
 
     expect(response.status).toBe(200);
     expect(body.length).toBeLessThanOrEqual(2);
-    // eslint-disable-next-line @typescript-eslint/unbound-method -- mock do jest-mock-extended
+    // eslint-disable-next-line @typescript-eslint/unbound-method -- mock do vitest-mock-extended
     expect(prisma.evento.findMany).toHaveBeenCalledWith(
       expect.objectContaining({ take: 2, skip: 0 }),
     );
@@ -108,7 +108,7 @@ describe('GET /events/published (e2e)', () => {
       .get('/events/published?cidade=S%C3%A3o%20Paulo')
       .expect(200);
 
-    // eslint-disable-next-line @typescript-eslint/unbound-method -- mock do jest-mock-extended
+    // eslint-disable-next-line @typescript-eslint/unbound-method -- mock do vitest-mock-extended
     expect(prisma.evento.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: {
@@ -126,7 +126,7 @@ describe('GET /events/published (e2e)', () => {
       .get('/events/published?modalidade=Online')
       .expect(200);
 
-    // eslint-disable-next-line @typescript-eslint/unbound-method -- mock do jest-mock-extended
+    // eslint-disable-next-line @typescript-eslint/unbound-method -- mock do vitest-mock-extended
     expect(prisma.evento.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: {
@@ -146,7 +146,7 @@ describe('GET /events/published (e2e)', () => {
       )
       .expect(200);
 
-    // eslint-disable-next-line @typescript-eslint/unbound-method -- mock do jest-mock-extended
+    // eslint-disable-next-line @typescript-eslint/unbound-method -- mock do vitest-mock-extended
     expect(prisma.evento.findMany).toHaveBeenCalledWith({
       where: {
         status: 'publicado',

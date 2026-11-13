@@ -1,7 +1,7 @@
 import type { Server } from 'node:http';
 import { INestApplication } from '@nestjs/common';
 import { Evento } from '@prisma/client';
-import { DeepMockProxy } from 'jest-mock-extended';
+import { DeepMockProxy } from 'vitest-mock-extended';
 import request from 'supertest';
 import { todayInSaoPaulo } from '../src/common/utils/event-date.util';
 import { PrismaService } from '../src/prisma/prisma.service';

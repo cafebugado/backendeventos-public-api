@@ -1,5 +1,5 @@
 import { Prisma } from '@prisma/client';
-import { mockDeep } from 'jest-mock-extended';
+import { mockDeep } from 'vitest-mock-extended';
 import { SAFE_LIST_LIMIT } from '../../../common/constants/pagination';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { PrismaTagRepository } from './prisma-tag.repository';
@@ -13,7 +13,7 @@ describe('PrismaTagRepository', () => {
 
       await repo.findAll();
 
-      // eslint-disable-next-line @typescript-eslint/unbound-method -- mock do jest-mock-extended, não chamada de método real
+      // eslint-disable-next-line @typescript-eslint/unbound-method -- mock do vitest-mock-extended, não chamada de método real
       expect(prisma.tag.findMany).toHaveBeenCalledWith({
         orderBy: { nome: 'asc' },
         take: SAFE_LIST_LIMIT,
@@ -96,7 +96,7 @@ describe('PrismaTagRepository', () => {
 
       await repo.findTagsForEvento('evento-1');
 
-      // eslint-disable-next-line @typescript-eslint/unbound-method -- mock do jest-mock-extended, não chamada de método real
+      // eslint-disable-next-line @typescript-eslint/unbound-method -- mock do vitest-mock-extended, não chamada de método real
       expect(prisma.tag.findMany).toHaveBeenCalledWith({
         where: { eventoTags: { some: { evento_id: 'evento-1' } } },
         orderBy: { nome: 'asc' },

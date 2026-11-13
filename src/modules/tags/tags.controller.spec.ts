@@ -1,16 +1,15 @@
+import type { Mocked } from 'vitest';
 import { TagsController } from './tags.controller';
 import { TagsService } from './tags.service';
 
 describe('TagsController', () => {
   function createController(): {
     controller: TagsController;
-    service: jest.Mocked<Pick<TagsService, 'findAll' | 'getEventTagsMap'>>;
+    service: Mocked<Pick<TagsService, 'findAll' | 'getEventTagsMap'>>;
   } {
-    const service: jest.Mocked<
-      Pick<TagsService, 'findAll' | 'getEventTagsMap'>
-    > = {
-      findAll: jest.fn(),
-      getEventTagsMap: jest.fn(),
+    const service: Mocked<Pick<TagsService, 'findAll' | 'getEventTagsMap'>> = {
+      findAll: vi.fn(),
+      getEventTagsMap: vi.fn(),
     };
     const controller = new TagsController(service as unknown as TagsService);
     return { controller, service };
