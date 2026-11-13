@@ -8,6 +8,15 @@ datasource db {
   directUrl = env("DIRECT_URL") // conexão direta :5432 — usada só por `prisma db pull`/`migrate`
 }
 
+// REVALIDAÇÃO (2026-11-13): todos os models foram comparados com o projeto
+// Supabase NOVO (produção desde a migração de 18/10/2026, Postgres 17) via
+// `information_schema.columns` + `pg_constraint`. Colunas, tipos, nulidade,
+// defaults, PKs, FKs, UNIQUEs e CHECKs batem, com duas exceções tratadas: o
+// UNIQUE de `comunidades.nome`, que foi incluído, e a nulidade de
+// `eventos.created_at`/`updated_at` (ver o aviso no model Evento). Os nomes de
+// constraints seguem os da produção (`map:`). As validações de 2026-08 citadas
+// abaixo foram feitas contra o projeto ANTIGO.
+
 /// Escrito à mão a partir de D:\backendeventos\app\models\evento.py (SQLAlchemy) e
 /// depois validado campo a campo contra a tabela real via `information_schema.columns`
 /// usando DIRECT_URL (2026-08-08) — 2 divergências do modelo SQLAlchemy foram
@@ -20,39 +29,44 @@ datasource db {
 /// para a tabela real `eventos` via @@map. Os CAMPOS continuam snake_case sem
 /// tradução (sem @map), pois a resposta HTTP pública também é snake_case.
 model Evento {
-  id            String   @id @default(uuid()) @db.Uuid
-  nome          String   @db.Text
-  slug          String   @unique @db.Text
-  descricao     String?  @db.Text
+  id            String        @id @default(uuid()) @db.Uuid
+  nome          String        @db.Text
+  slug          String        @unique(map: "eventos_slug_unique") @db.Text
+  descricao     String?       @db.Text
   /// "DD/MM/YYYY" — texto livre, decisão deliberada de compatibilidade com dado
   /// legado. NÃO converter para DateTime.
-  data_evento   String   @db.Text
-  horario       String   @db.Text
-  dia_semana    String   @db.Text
+  data_evento   String        @db.Text
+  horario       String        @db.Text
+  dia_semana    String        @db.Text
   /// CHECK CONSTRAINT no Postgres (não é enum nativo): Matinal | Diurno | Vespertino | Noturno.
   /// Modelar como Prisma enum criaria divergência garantida com `prisma db pull` real.
   /// Confirmado via introspecção real (2026-08-08): NOT NULL e tipo text (não varchar)
   /// — diverge do que o modelo SQLAlchemy sugeria (nullable=True); o banco é a
   /// fonte de verdade.
-  periodo       String   @db.Text
-  link          String   @db.Text
-  imagem        String?  @db.Text
+  periodo       String        @db.Text
+  link          String        @db.Text
+  imagem        String?       @db.Text
   /// Texto livre apesar do nome — SEM CHECK CONSTRAINT no banco.
-  modalidade    String?  @db.Text
-  endereco      String?  @db.Text
-  cidade        String?  @db.Text
-  estado        String?  @db.Text
+  modalidade    String?       @db.Text
+  endereco      String?       @db.Text
+  cidade        String?       @db.Text
+  estado        String?       @db.Text
   /// CHECK CONSTRAINT: rascunho | publicado | arquivado | em_analise | recusado.
   /// Interno de moderação — NUNCA exposto na API pública.
   /// Confirmado via introspecção real (2026-08-08): nullable no banco (diverge do
   /// SQLAlchemy, que declarava nullable=False) — banco é a fonte de verdade.
-  status        String?  @default("publicado") @db.Text
+  status        String?       @default("publicado") @db.Text
   /// Interno de moderação — NUNCA exposto na API pública.
-  motivo_recusa String?  @db.Text
+  motivo_recusa String?       @db.Text
   /// FK lógica para auth.users (Supabase Auth), sem constraint física — NUNCA exposto.
-  created_by    String?  @db.Uuid
-  created_at    DateTime @default(now()) @db.Timestamptz(6)
-  updated_at    DateTime @default(now()) @db.Timestamptz(6)
+  created_by    String?       @db.Uuid
+  /// DIVERGÊNCIA CONHECIDA (2026-11-13): no projeto Supabase novo, `created_at` e
+  /// `updated_at` aceitam NULL no banco, mas aqui e no SQLAlchemy são obrigatórios.
+  /// Mantidos NOT NULL de propósito: hoje há 0 nulos e a correção é devolver o
+  /// NOT NULL ao banco (issue cafebugado/eventosBackend#56). Quando ela for
+  /// aplicada, remova este aviso.
+  created_at    DateTime      @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime      @default(now()) @db.Timestamptz(6)
   eventoTags    EventoTag[]
   galeriaAlbum  GaleriaAlbum?
 
@@ -135,7 +149,7 @@ model Contribuinte {
 /// por nome via `UserProfile`, nunca expostas cruas na API pública.
 model GaleriaAlbum {
   id            String        @id @default(uuid()) @db.Uuid
-  evento_id     String?       @unique @db.Uuid
+  evento_id     String?       @unique(map: "galeria_albuns_evento_id_unique") @db.Uuid
   comunidade_id String?       @db.Uuid
   created_by    String?       @db.Uuid
   created_at    DateTime?     @default(now()) @db.Timestamptz(6)
@@ -167,7 +181,8 @@ model GaleriaFoto {
 
 model Comunidade {
   id         String         @id @default(uuid()) @db.Uuid
-  nome       String         @db.Text
+  /// UNIQUE no banco real (`comunidades_nome_key`), confirmado em 2026-11-13.
+  nome       String         @unique @db.Text
   created_by String?        @db.Uuid
   created_at DateTime?      @default(now()) @db.Timestamptz(6)
   updated_at DateTime?      @default(now()) @db.Timestamptz(6)

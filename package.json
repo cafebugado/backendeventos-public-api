@@ -22,7 +22,17 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "prepare": "husky"
+    "prepare": "husky",
+    "db:up": "docker compose up -d --wait || node scripts/db-hint.mjs",
+    "db:down": "docker compose down",
+    "db:reset": "docker compose down -v && docker compose up -d --wait || node scripts/db-hint.mjs",
+    "db:logs": "docker compose logs -f db",
+    "db:psql": "docker compose exec db psql -U postgres",
+    "db:schema": "node scripts/db-schema.mjs",
+    "db:schema:check": "node scripts/db-schema.mjs --check",
+    "test:smoke": "node scripts/smoke-local.mjs",
+    "postinstall": "prisma generate",
+    "check:secrets": "node scripts/check-secrets.mjs --all"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",

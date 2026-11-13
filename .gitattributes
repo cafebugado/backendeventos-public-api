@@ -1,0 +1,6 @@
+# Scripts executados dentro do container Linux e conferidos pelo CI: sempre LF,
+# mesmo quando o checkout é feito no Windows.
+*.sql text eol=lf
+*.sh  text eol=lf
+*.mjs text eol=lf
+docker-compose.yml text eol=lf
