@@ -1,7 +1,7 @@
 import type { Server } from 'node:http';
 import { INestApplication } from '@nestjs/common';
 import { Evento } from '@prisma/client';
-import { DeepMockProxy } from 'jest-mock-extended';
+import { DeepMockProxy } from 'vitest-mock-extended';
 import request from 'supertest';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { createTestApp } from './test-app.helper';
@@ -117,7 +117,7 @@ describe('GET /events/slug/:slugOrId (e2e)', () => {
 
     await request(server).get('/events/slug/isso-nao-e-um-uuid').expect(404);
 
-    // eslint-disable-next-line @typescript-eslint/unbound-method -- mock do jest-mock-extended
+    // eslint-disable-next-line @typescript-eslint/unbound-method -- mock do vitest-mock-extended
     expect(prisma.evento.findFirst).toHaveBeenCalledWith({
       where: {
         status: 'publicado',

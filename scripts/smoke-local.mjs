@@ -4,7 +4,7 @@
 //   npm run db:up && npm run start:dev   (em outro terminal)
 //   npm run test:smoke                   (BASE_URL=http://localhost:3000 por padrão)
 //
-// Complementa os testes do Jest (que mockam o Prisma): aqui as queries rodam
+// Complementa os testes do Vitest (que mockam o Prisma): aqui as queries rodam
 // num Postgres de verdade — inclusive o SQL cru de /events/upcoming — e as
 // regras de moderação são conferidas contra os casos do 04-seed.sql.
 // As contagens abaixo dependem do seed: mudou o seed, ajuste aqui.

@@ -95,9 +95,9 @@ jobs:
       - name: Generate Prisma Client
         run: npx prisma generate
 
-      # test:cov já tem os coverageThreshold (80%) hardcoded no package.json
-      # para events/tags/contributors/gallery — o próprio `jest --coverage`
-      # falha (exit code != 0) se ficar abaixo disso, sem precisar de nada extra aqui.
+      # test:cov já tem os thresholds de cobertura (80% por arquivo) no
+      # vitest.config.ts para events/tags/contributors/gallery — o próprio
+      # `vitest run --coverage` falha (exit code != 0) se ficar abaixo disso.
       - name: Run unit tests with coverage
         run: npm run test:cov
 

@@ -1,13 +1,14 @@
+import type { Mocked } from 'vitest';
 import { GalleryController } from './gallery.controller';
 import { GalleryService } from './gallery.service';
 
 describe('GalleryController', () => {
   function createController(): {
     controller: GalleryController;
-    service: jest.Mocked<Pick<GalleryService, 'getPublicAlbums'>>;
+    service: Mocked<Pick<GalleryService, 'getPublicAlbums'>>;
   } {
-    const service: jest.Mocked<Pick<GalleryService, 'getPublicAlbums'>> = {
-      getPublicAlbums: jest.fn(),
+    const service: Mocked<Pick<GalleryService, 'getPublicAlbums'>> = {
+      getPublicAlbums: vi.fn(),
     };
     const controller = new GalleryController(
       service as unknown as GalleryService,

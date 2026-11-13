@@ -1,13 +1,14 @@
+import type { Mock } from 'vitest';
 import { ArgumentsHost, BadRequestException, HttpStatus } from '@nestjs/common';
 import { HttpExceptionFilter } from './http-exception.filter';
 
 function createHost(request: { method: string; url: string }): {
   host: ArgumentsHost;
-  response: { status: jest.Mock; json: jest.Mock };
+  response: { status: Mock; json: Mock };
 } {
   const response = {
-    status: jest.fn().mockReturnThis(),
-    json: jest.fn().mockReturnThis(),
+    status: vi.fn().mockReturnThis(),
+    json: vi.fn().mockReturnThis(),
   };
 
   const host = {

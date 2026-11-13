@@ -1,3 +1,4 @@
+import type { Mocked } from 'vitest';
 import { IContributorRepository } from './repositories/contributor.repository.interface';
 import { ContributorsService } from './contributors.service';
 
@@ -29,10 +30,10 @@ function buildContribuinte(
 describe('ContributorsService', () => {
   function createService(): {
     service: ContributorsService;
-    repo: jest.Mocked<IContributorRepository>;
+    repo: Mocked<IContributorRepository>;
   } {
-    const repo: jest.Mocked<IContributorRepository> = {
-      findAll: jest.fn(),
+    const repo: Mocked<IContributorRepository> = {
+      findAll: vi.fn(),
     };
     return { service: new ContributorsService(repo), repo };
   }

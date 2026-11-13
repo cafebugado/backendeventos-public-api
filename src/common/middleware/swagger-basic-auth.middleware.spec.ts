@@ -7,9 +7,9 @@ function buildAuthHeader(user: string, password: string): string {
 
 function createResponseMock(): Response {
   return {
-    setHeader: jest.fn(),
-    status: jest.fn().mockReturnThis(),
-    send: jest.fn().mockReturnThis(),
+    setHeader: vi.fn(),
+    status: vi.fn().mockReturnThis(),
+    send: vi.fn().mockReturnThis(),
   } as unknown as Response;
 }
 
@@ -21,7 +21,7 @@ describe('createSwaggerBasicAuthMiddleware', () => {
       headers: { authorization: buildAuthHeader('admin', 'super-secreta') },
     } as unknown as Request;
     const res = createResponseMock();
-    const next = jest.fn();
+    const next = vi.fn();
 
     middleware(req, res, next);
 
@@ -33,7 +33,7 @@ describe('createSwaggerBasicAuthMiddleware', () => {
   it('retorna 401 quando não há header Authorization', () => {
     const req = { headers: {} } as unknown as Request;
     const res = createResponseMock();
-    const next = jest.fn();
+    const next = vi.fn();
 
     middleware(req, res, next);
 
@@ -52,7 +52,7 @@ describe('createSwaggerBasicAuthMiddleware', () => {
       headers: { authorization: buildAuthHeader('admin', 'senha-errada') },
     } as unknown as Request;
     const res = createResponseMock();
-    const next = jest.fn();
+    const next = vi.fn();
 
     middleware(req, res, next);
 
@@ -68,7 +68,7 @@ describe('createSwaggerBasicAuthMiddleware', () => {
       },
     } as unknown as Request;
     const res = createResponseMock();
-    const next = jest.fn();
+    const next = vi.fn();
 
     middleware(req, res, next);
 
@@ -82,7 +82,7 @@ describe('createSwaggerBasicAuthMiddleware', () => {
       headers: { authorization: 'Bearer algum-token' },
     } as unknown as Request;
     const res = createResponseMock();
-    const next = jest.fn();
+    const next = vi.fn();
 
     middleware(req, res, next);
 
@@ -98,7 +98,7 @@ describe('createSwaggerBasicAuthMiddleware', () => {
       },
     } as unknown as Request;
     const res = createResponseMock();
-    const next = jest.fn();
+    const next = vi.fn();
 
     middleware(req, res, next);
 
