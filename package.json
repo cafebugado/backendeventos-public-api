@@ -31,7 +31,8 @@
     "db:schema": "node scripts/db-schema.mjs",
     "db:schema:check": "node scripts/db-schema.mjs --check",
     "test:smoke": "node scripts/smoke-local.mjs",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "check:secrets": "node scripts/check-secrets.mjs --all"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
