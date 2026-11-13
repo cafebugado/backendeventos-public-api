@@ -1,5 +1,5 @@
 import { Prisma } from '@prisma/client';
-import { DeepMockProxy, mockDeep } from 'jest-mock-extended';
+import { DeepMockProxy, mockDeep } from 'vitest-mock-extended';
 import {
   RECOMMENDATION_CANDIDATES_LIMIT,
   SAFE_LIST_LIMIT,
@@ -25,7 +25,7 @@ describe('PrismaEventoRepository', () => {
 
     await repo.findPublished();
 
-    // eslint-disable-next-line @typescript-eslint/unbound-method -- mock do jest-mock-extended, não chamada de método real
+    // eslint-disable-next-line @typescript-eslint/unbound-method -- mock do vitest-mock-extended, não chamada de método real
     expect(prisma.evento.findMany).toHaveBeenCalledWith({
       where: { status: 'publicado' },
       orderBy: { created_at: 'desc' },
@@ -41,7 +41,7 @@ describe('PrismaEventoRepository', () => {
 
     await repo.findPublished({ limit: 5, offset: 10 });
 
-    // eslint-disable-next-line @typescript-eslint/unbound-method -- mock do jest-mock-extended, não chamada de método real
+    // eslint-disable-next-line @typescript-eslint/unbound-method -- mock do vitest-mock-extended, não chamada de método real
     expect(prisma.evento.findMany).toHaveBeenCalledWith({
       where: { status: 'publicado' },
       orderBy: { created_at: 'desc' },
@@ -57,7 +57,7 @@ describe('PrismaEventoRepository', () => {
 
     await repo.findPublished({ cidade: 'São Paulo' });
 
-    // eslint-disable-next-line @typescript-eslint/unbound-method -- mock do jest-mock-extended, não chamada de método real
+    // eslint-disable-next-line @typescript-eslint/unbound-method -- mock do vitest-mock-extended, não chamada de método real
     expect(prisma.evento.findMany).toHaveBeenCalledWith({
       where: {
         status: 'publicado',
@@ -76,7 +76,7 @@ describe('PrismaEventoRepository', () => {
 
     await repo.findPublished({ modalidade: 'Online' });
 
-    // eslint-disable-next-line @typescript-eslint/unbound-method -- mock do jest-mock-extended, não chamada de método real
+    // eslint-disable-next-line @typescript-eslint/unbound-method -- mock do vitest-mock-extended, não chamada de método real
     expect(prisma.evento.findMany).toHaveBeenCalledWith({
       where: {
         status: 'publicado',
@@ -100,7 +100,7 @@ describe('PrismaEventoRepository', () => {
       offset: 10,
     });
 
-    // eslint-disable-next-line @typescript-eslint/unbound-method -- mock do jest-mock-extended, não chamada de método real
+    // eslint-disable-next-line @typescript-eslint/unbound-method -- mock do vitest-mock-extended, não chamada de método real
     expect(prisma.evento.findMany).toHaveBeenCalledWith({
       where: {
         status: 'publicado',
@@ -130,7 +130,7 @@ describe('PrismaEventoRepository', () => {
 
       await repo.findFeatured(3);
 
-      // eslint-disable-next-line @typescript-eslint/unbound-method -- mock do jest-mock-extended, não chamada de método real
+      // eslint-disable-next-line @typescript-eslint/unbound-method -- mock do vitest-mock-extended, não chamada de método real
       expect(prisma.evento.findMany).toHaveBeenCalledWith({
         where: { status: 'publicado' },
         orderBy: { created_at: 'desc' },
@@ -155,7 +155,7 @@ describe('PrismaEventoRepository', () => {
 
       await repo.findFeatured(7);
 
-      // eslint-disable-next-line @typescript-eslint/unbound-method -- mock do jest-mock-extended, não chamada de método real
+      // eslint-disable-next-line @typescript-eslint/unbound-method -- mock do vitest-mock-extended, não chamada de método real
       expect(prisma.evento.findMany).toHaveBeenCalledWith(
         expect.objectContaining({ take: 7 }),
       );
@@ -179,7 +179,7 @@ describe('PrismaEventoRepository', () => {
 
       await repo.findBySlugOrId('meetup-cafe-bugado');
 
-      // eslint-disable-next-line @typescript-eslint/unbound-method -- mock do jest-mock-extended, não chamada de método real
+      // eslint-disable-next-line @typescript-eslint/unbound-method -- mock do vitest-mock-extended, não chamada de método real
       expect(prisma.evento.findFirst).toHaveBeenCalledWith({
         where: {
           status: 'publicado',
@@ -196,7 +196,7 @@ describe('PrismaEventoRepository', () => {
 
       await repo.findBySlugOrId(uuid);
 
-      // eslint-disable-next-line @typescript-eslint/unbound-method -- mock do jest-mock-extended, não chamada de método real
+      // eslint-disable-next-line @typescript-eslint/unbound-method -- mock do vitest-mock-extended, não chamada de método real
       expect(prisma.evento.findFirst).toHaveBeenCalledWith({
         where: {
           status: 'publicado',
@@ -212,7 +212,7 @@ describe('PrismaEventoRepository', () => {
 
       await repo.findBySlugOrId('11111111-1111-1111-1111-11111111111z');
 
-      // eslint-disable-next-line @typescript-eslint/unbound-method -- mock do jest-mock-extended, não chamada de método real
+      // eslint-disable-next-line @typescript-eslint/unbound-method -- mock do vitest-mock-extended, não chamada de método real
       expect(prisma.evento.findFirst).toHaveBeenCalledWith({
         where: {
           status: 'publicado',
@@ -249,7 +249,7 @@ describe('PrismaEventoRepository', () => {
 
       await repo.countPublished();
 
-      // eslint-disable-next-line @typescript-eslint/unbound-method -- mock do jest-mock-extended, não chamada de método real
+      // eslint-disable-next-line @typescript-eslint/unbound-method -- mock do vitest-mock-extended, não chamada de método real
       expect(prisma.evento.count).toHaveBeenCalledWith({
         where: { status: 'publicado' },
       });
@@ -371,7 +371,7 @@ describe('PrismaEventoRepository', () => {
 
       await repo.findFeaturedByIds(['a', 'b']);
 
-      // eslint-disable-next-line @typescript-eslint/unbound-method -- mock do jest-mock-extended, não chamada de método real
+      // eslint-disable-next-line @typescript-eslint/unbound-method -- mock do vitest-mock-extended, não chamada de método real
       expect(prisma.evento.findMany).toHaveBeenCalledWith({
         where: { id: { in: ['a', 'b'] }, status: 'publicado' },
         select: {
@@ -392,7 +392,7 @@ describe('PrismaEventoRepository', () => {
       const repo = new PrismaEventoRepository(prisma);
 
       await expect(repo.findFeaturedByIds([])).resolves.toEqual([]);
-      // eslint-disable-next-line @typescript-eslint/unbound-method -- mock do jest-mock-extended, não chamada de método real
+      // eslint-disable-next-line @typescript-eslint/unbound-method -- mock do vitest-mock-extended, não chamada de método real
       expect(prisma.evento.findMany).not.toHaveBeenCalled();
     });
   });

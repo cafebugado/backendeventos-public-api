@@ -1,4 +1,4 @@
-import { mockDeep } from 'jest-mock-extended';
+import { mockDeep } from 'vitest-mock-extended';
 import { SAFE_LIST_LIMIT } from '../../../common/constants/pagination';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { PrismaGalleryRepository } from './prisma-gallery.repository';
@@ -12,7 +12,7 @@ describe('PrismaGalleryRepository', () => {
 
       await repo.findAlbumsPublic();
 
-      // eslint-disable-next-line @typescript-eslint/unbound-method -- mock do jest-mock-extended, não chamada de método real
+      // eslint-disable-next-line @typescript-eslint/unbound-method -- mock do vitest-mock-extended, não chamada de método real
       expect(prisma.galeriaAlbum.findMany).toHaveBeenCalledWith({
         orderBy: { created_at: 'desc' },
         take: SAFE_LIST_LIMIT,
@@ -100,7 +100,7 @@ describe('PrismaGalleryRepository', () => {
       const result = await repo.findUserProfilesByIds([]);
 
       expect(result).toEqual([]);
-      // eslint-disable-next-line @typescript-eslint/unbound-method -- mock do jest-mock-extended, não chamada de método real
+      // eslint-disable-next-line @typescript-eslint/unbound-method -- mock do vitest-mock-extended, não chamada de método real
       expect(prisma.userProfile.findMany).not.toHaveBeenCalled();
     });
 
@@ -111,7 +111,7 @@ describe('PrismaGalleryRepository', () => {
 
       await repo.findUserProfilesByIds(['u1', 'u2']);
 
-      // eslint-disable-next-line @typescript-eslint/unbound-method -- mock do jest-mock-extended, não chamada de método real
+      // eslint-disable-next-line @typescript-eslint/unbound-method -- mock do vitest-mock-extended, não chamada de método real
       expect(prisma.userProfile.findMany).toHaveBeenCalledWith({
         where: { user_id: { in: ['u1', 'u2'] } },
       });

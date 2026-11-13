@@ -1,13 +1,14 @@
+import type { Mocked } from 'vitest';
 import { ContributorsController } from './contributors.controller';
 import { ContributorsService } from './contributors.service';
 
 describe('ContributorsController', () => {
   function createController(): {
     controller: ContributorsController;
-    service: jest.Mocked<Pick<ContributorsService, 'findAll'>>;
+    service: Mocked<Pick<ContributorsService, 'findAll'>>;
   } {
-    const service: jest.Mocked<Pick<ContributorsService, 'findAll'>> = {
-      findAll: jest.fn(),
+    const service: Mocked<Pick<ContributorsService, 'findAll'>> = {
+      findAll: vi.fn(),
     };
     const controller = new ContributorsController(
       service as unknown as ContributorsService,

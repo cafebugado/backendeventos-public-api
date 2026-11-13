@@ -1,6 +1,6 @@
 import type { Server } from 'node:http';
 import { INestApplication } from '@nestjs/common';
-import { DeepMockProxy } from 'jest-mock-extended';
+import { DeepMockProxy } from 'vitest-mock-extended';
 import request from 'supertest';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { EventoFeaturedFields } from '../src/modules/events/repositories/evento.repository.interface';
@@ -76,7 +76,7 @@ describe('GET /events/featured (e2e)', () => {
     const response = await request(server).get('/events/featured');
 
     expect(response.status).toBe(200);
-    // eslint-disable-next-line @typescript-eslint/unbound-method -- mock do jest-mock-extended
+    // eslint-disable-next-line @typescript-eslint/unbound-method -- mock do vitest-mock-extended
     expect(prisma.evento.findMany).toHaveBeenCalledWith(
       expect.objectContaining({ take: 3 }),
     );
@@ -93,7 +93,7 @@ describe('GET /events/featured (e2e)', () => {
 
     expect(response.status).toBe(200);
     expect(body.length).toBeLessThanOrEqual(2);
-    // eslint-disable-next-line @typescript-eslint/unbound-method -- mock do jest-mock-extended
+    // eslint-disable-next-line @typescript-eslint/unbound-method -- mock do vitest-mock-extended
     expect(prisma.evento.findMany).toHaveBeenCalledWith(
       expect.objectContaining({ take: 2 }),
     );

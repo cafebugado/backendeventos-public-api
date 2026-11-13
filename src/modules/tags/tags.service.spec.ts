@@ -1,3 +1,4 @@
+import type { Mocked } from 'vitest';
 import { ITagRepository } from './repositories/tag.repository.interface';
 import { TagsService } from './tags.service';
 
@@ -18,12 +19,12 @@ function buildTag(
 describe('TagsService', () => {
   function createService(): {
     service: TagsService;
-    repo: jest.Mocked<ITagRepository>;
+    repo: Mocked<ITagRepository>;
   } {
-    const repo: jest.Mocked<ITagRepository> = {
-      findAll: jest.fn(),
-      findEventTagsMap: jest.fn(),
-      findTagsForEvento: jest.fn(),
+    const repo: Mocked<ITagRepository> = {
+      findAll: vi.fn(),
+      findEventTagsMap: vi.fn(),
+      findTagsForEvento: vi.fn(),
     };
     return { service: new TagsService(repo), repo };
   }

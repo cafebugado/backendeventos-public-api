@@ -1,6 +1,6 @@
 import type { Server } from 'node:http';
 import { INestApplication } from '@nestjs/common';
-import { DeepMockProxy } from 'jest-mock-extended';
+import { DeepMockProxy } from 'vitest-mock-extended';
 import request from 'supertest';
 import { SAFE_LIST_LIMIT } from '../src/common/constants/pagination';
 import { PrismaService } from '../src/prisma/prisma.service';
@@ -108,7 +108,7 @@ describe('GET /contributors (e2e)', () => {
 
     await request(server).get('/contributors');
 
-    // eslint-disable-next-line @typescript-eslint/unbound-method -- mock do jest-mock-extended
+    // eslint-disable-next-line @typescript-eslint/unbound-method -- mock do vitest-mock-extended
     expect(prisma.contribuinte.findMany).toHaveBeenCalledWith({
       orderBy: { nome: 'asc' },
       take: SAFE_LIST_LIMIT,

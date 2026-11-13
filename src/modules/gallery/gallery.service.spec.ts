@@ -1,3 +1,4 @@
+import type { Mocked } from 'vitest';
 import { UserProfile } from '@prisma/client';
 import { GalleryService } from './gallery.service';
 import {
@@ -31,11 +32,11 @@ function buildProfile(overrides: Partial<UserProfile> = {}): UserProfile {
 describe('GalleryService', () => {
   function createService(): {
     service: GalleryService;
-    repo: jest.Mocked<IGalleryRepository>;
+    repo: Mocked<IGalleryRepository>;
   } {
-    const repo: jest.Mocked<IGalleryRepository> = {
-      findAlbumsPublic: jest.fn(),
-      findUserProfilesByIds: jest.fn(),
+    const repo: Mocked<IGalleryRepository> = {
+      findAlbumsPublic: vi.fn(),
+      findUserProfilesByIds: vi.fn(),
     };
     return { service: new GalleryService(repo), repo };
   }
@@ -47,7 +48,7 @@ describe('GalleryService', () => {
       repo.findUserProfilesByIds.mockResolvedValue([]);
 
       await expect(service.getPublicAlbums()).resolves.toEqual([]);
-      // eslint-disable-next-line @typescript-eslint/unbound-method -- mock jest, não chamada de método real
+      // eslint-disable-next-line @typescript-eslint/unbound-method -- mock do vitest, não chamada de método real
       expect(repo.findUserProfilesByIds).toHaveBeenCalledWith([]);
     });
 
@@ -99,7 +100,7 @@ describe('GalleryService', () => {
 
       const [result] = await service.getPublicAlbums();
 
-      // eslint-disable-next-line @typescript-eslint/unbound-method -- mock jest, não chamada de método real
+      // eslint-disable-next-line @typescript-eslint/unbound-method -- mock do vitest, não chamada de método real
       expect(repo.findUserProfilesByIds).toHaveBeenCalledWith(['user-1']);
       expect(result.created_by_nome).toBe('Alice Souza');
       expect(result.fotos[0].uploaded_by_nome).toBe('Alice Souza');

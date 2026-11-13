@@ -28,17 +28,10 @@ updates:
           - "minor"
           - "patch"
     ignore:
-      # NestJS 12 é ESM-only e quebra o Jest. A migração é feita à mão na
-      # issue #88. Remover este bloco quando ela for concluída.
-      - dependency-name: "@nestjs/*"
-        update-types: ["version-update:semver-major"]
-      # TypeScript 6 vem junto com o NestJS 12 (o @nestjs/schematics 12 exige)
-      # e pede ajustes no tsconfig (#88). O TypeScript 7 ainda não é aceito pelo
-      # ts-jest (<7), pelo typescript-eslint (<6.1) e pelo @nestjs/swagger
-      # (^5.5 || ^6). Remover quando o #88 estiver concluído e as ferramentas
-      # suportarem a major seguinte.
+      # O TypeScript 7 ainda não é aceito pelo typescript-eslint (<6.1) nem pelo
+      # @nestjs/swagger (^5.5 || ^6). Liberar quando os dois aceitarem.
       - dependency-name: "typescript"
-        update-types: ["version-update:semver-major"]
+        versions: [">=7.0.0"]
       # @types/node deve acompanhar o Node usado em runtime (22, ver .nvmrc),
       # não a versão mais recente do Node.
       - dependency-name: "@types/node"

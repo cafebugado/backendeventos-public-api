@@ -1,7 +1,7 @@
 import type { Server } from 'node:http';
 import { INestApplication } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { DeepMockProxy } from 'jest-mock-extended';
+import { DeepMockProxy } from 'vitest-mock-extended';
 import request from 'supertest';
 import { SAFE_LIST_LIMIT } from '../src/common/constants/pagination';
 import { PrismaService } from '../src/prisma/prisma.service';
@@ -88,7 +88,7 @@ describe('GET /tags e GET /events/tags-map (e2e)', () => {
 
       await request(server).get('/tags');
 
-      // eslint-disable-next-line @typescript-eslint/unbound-method -- mock do jest-mock-extended
+      // eslint-disable-next-line @typescript-eslint/unbound-method -- mock do vitest-mock-extended
       expect(prisma.tag.findMany).toHaveBeenCalledWith({
         orderBy: { nome: 'asc' },
         take: SAFE_LIST_LIMIT,

@@ -17,11 +17,20 @@ nunca escreve no banco, nem por engano. Isso é garantido em duas camadas indepe
 
 ## Stack
 
-- NestJS 11 (TypeScript, strict mode)
+- NestJS 12 (TypeScript 6, strict mode)
 - Prisma **6.x** + `@prisma/client` (ver nota de versão abaixo)
 - Postgres do Supabase (pooler transacional em runtime, conexão direta só para tooling)
 - class-validator / class-transformer, Swagger (`@nestjs/swagger`), `@nestjs/throttler`
-- Jest + Supertest (unitários, e2e e teste de contrato)
+- Vitest + Supertest (unitários, e2e e teste de contrato)
+
+### Nota sobre o NestJS 12 e o formato de módulo
+
+Os pacotes do NestJS 12 são publicados **só em ESM**, mas este projeto continua em
+**CommonJS**. Em runtime isso funciona porque o Node carrega ESM via `require()` a partir do
+**22.12** (por isso `engines.node >= 22.12.0`). Os testes usam **Vitest** em vez de Jest,
+porque o Jest não consegue carregar os pacotes ESM a partir de um projeto CommonJS (#88). O
+Vitest compila com SWC (`unplugin-swc`), já que o esbuild padrão dele não emite os metadados
+de decorators de que a injeção de dependências do Nest precisa.
 
 ### Nota sobre a versão do Prisma
 
@@ -94,7 +103,7 @@ npm run test:cov   # cobertura, com gate de 80% para modules/events
 npm run lint
 ```
 
-Todos os testes (unitários e e2e) usam um `PrismaService` mockado (`jest-mock-extended`) —
+Todos os testes (unitários e e2e) usam um `PrismaService` mockado (`vitest-mock-extended`) —
 rodam completos sem exigir conexão real ao Supabase. Para testar contra um Postgres de
 verdade, use o banco local: `npm run db:up`, `npm run start:dev` e, em outro terminal,
 `npm run test:smoke`.

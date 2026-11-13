@@ -7,7 +7,7 @@ describe('HealthController', () => {
     queryRawImpl: () => Promise<unknown>,
   ): HealthController {
     const prisma = {
-      $queryRaw: jest.fn(queryRawImpl),
+      $queryRaw: vi.fn(queryRawImpl),
     } as unknown as PrismaService;
     return new HealthController(prisma);
   }

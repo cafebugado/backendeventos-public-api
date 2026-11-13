@@ -3,7 +3,7 @@ import { PrismaService } from './prisma.service';
 describe('PrismaService', () => {
   it('conecta ao banco no onModuleInit', async () => {
     const service = new PrismaService();
-    const connectSpy = jest
+    const connectSpy = vi
       .spyOn(service, '$connect')
       .mockResolvedValue(undefined);
 
@@ -14,7 +14,7 @@ describe('PrismaService', () => {
 
   it('desconecta do banco no onModuleDestroy', async () => {
     const service = new PrismaService();
-    const disconnectSpy = jest
+    const disconnectSpy = vi
       .spyOn(service, '$disconnect')
       .mockResolvedValue(undefined);
 

@@ -97,11 +97,11 @@ describe('todayInSaoPaulo', () => {
   });
 
   it('usa o relógio atual quando nenhum instante é informado', () => {
-    jest.useFakeTimers().setSystemTime(new Date('2026-10-02T02:30:00.000Z'));
+    vi.useFakeTimers().setSystemTime(new Date('2026-10-02T02:30:00.000Z'));
     try {
       expect(todayInSaoPaulo().toISOString()).toBe('2026-10-01T00:00:00.000Z');
     } finally {
-      jest.useRealTimers();
+      vi.useRealTimers();
     }
   });
 });
