@@ -116,7 +116,7 @@ CREATE TABLE "user_profiles" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "eventos_slug_key" ON "eventos"("slug");
+CREATE UNIQUE INDEX "eventos_slug_unique" ON "eventos"("slug");
 
 -- CreateIndex
 CREATE INDEX "eventos_data_evento_idx" ON "eventos"("data_evento");
@@ -143,7 +143,7 @@ CREATE UNIQUE INDEX "evento_tags_evento_id_tag_id_key" ON "evento_tags"("evento_
 CREATE UNIQUE INDEX "contribuintes_github_username_key" ON "contribuintes"("github_username");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "galeria_albuns_evento_id_key" ON "galeria_albuns"("evento_id");
+CREATE UNIQUE INDEX "galeria_albuns_evento_id_unique" ON "galeria_albuns"("evento_id");
 
 -- CreateIndex
 CREATE INDEX "galeria_albuns_comunidade_id_idx" ON "galeria_albuns"("comunidade_id");
@@ -156,6 +156,9 @@ CREATE INDEX "galeria_fotos_album_id_idx" ON "galeria_fotos"("album_id");
 
 -- CreateIndex
 CREATE INDEX "galeria_fotos_uploaded_by_idx" ON "galeria_fotos"("uploaded_by");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "comunidades_nome_key" ON "comunidades"("nome");
 
 -- AddForeignKey
 ALTER TABLE "evento_tags" ADD CONSTRAINT "evento_tags_evento_id_fkey" FOREIGN KEY ("evento_id") REFERENCES "eventos"("id") ON DELETE CASCADE ON UPDATE CASCADE;
