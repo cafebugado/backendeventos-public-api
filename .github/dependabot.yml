@@ -15,6 +15,16 @@ updates:
       nestjs:
         patterns:
           - "@nestjs/*"
+      # O ESLint e o @eslint/js precisam estar na mesma major (o @eslint/js 10
+      # sozinho falha, como no #104), e os plugins acompanham. Fica antes do
+      # grupo dev-dependencies, porque o Dependabot usa o PRIMEIRO grupo que casa.
+      eslint:
+        patterns:
+          - "eslint"
+          - "@eslint/*"
+          - "typescript-eslint"
+          - "eslint-config-*"
+          - "eslint-plugin-*"
       # Só minor/patch em grupo. Uma major junto com atualizações seguras
       # derruba o grupo inteiro (foi o caso do #87, com TypeScript 7 e
       # ESLint 10). As majors chegam em PRs individuais, para avaliar cada uma.
@@ -24,6 +34,11 @@ updates:
           - "*"
         exclude-patterns:
           - "@nestjs/*"
+          - "eslint"
+          - "@eslint/*"
+          - "typescript-eslint"
+          - "eslint-config-*"
+          - "eslint-plugin-*"
         update-types:
           - "minor"
           - "patch"
