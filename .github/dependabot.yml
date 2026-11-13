@@ -9,11 +9,40 @@ updates:
       day: "monday"
     open-pull-requests-limit: 10
     groups:
+      # Os pacotes @nestjs/* exigem uns aos outros na MESMA major (ex.:
+      # @nestjs/core@12 pede @nestjs/common@^12). Um PR por pacote nunca
+      # instala (ERESOLVE), então eles sempre sobem juntos, de produção e dev.
+      nestjs:
+        patterns:
+          - "@nestjs/*"
+      # Só minor/patch em grupo. Uma major junto com atualizações seguras
+      # derruba o grupo inteiro (foi o caso do #87, com TypeScript 7 e
+      # ESLint 10). As majors chegam em PRs individuais, para avaliar cada uma.
       dev-dependencies:
         dependency-type: "development"
         patterns:
           - "*"
+        exclude-patterns:
+          - "@nestjs/*"
+        update-types:
+          - "minor"
+          - "patch"
     ignore:
+      # NestJS 12 é ESM-only e quebra o Jest. A migração é feita à mão na
+      # issue #88. Remover este bloco quando ela for concluída.
+      - dependency-name: "@nestjs/*"
+        update-types: ["version-update:semver-major"]
+      # TypeScript 6 vem junto com o NestJS 12 (o @nestjs/schematics 12 exige)
+      # e pede ajustes no tsconfig (#88). O TypeScript 7 ainda não é aceito pelo
+      # ts-jest (<7), pelo typescript-eslint (<6.1) e pelo @nestjs/swagger
+      # (^5.5 || ^6). Remover quando o #88 estiver concluído e as ferramentas
+      # suportarem a major seguinte.
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+      # @types/node deve acompanhar o Node usado em runtime (22, ver .nvmrc),
+      # não a versão mais recente do Node.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
       # Prisma está fixado em 6.19.3 por decisão do time — não queremos que o
       # Dependabot proponha o salto de major para o Prisma 7 (breaking changes
       # de configuração, ver notas do workflow de CI). Patches/minors dentro do
