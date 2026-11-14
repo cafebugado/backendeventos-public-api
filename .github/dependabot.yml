@@ -65,6 +65,13 @@ updates:
         update-types: ["version-update:semver-major"]
       - dependency-name: "@prisma/client"
         update-types: ["version-update:semver-major"]
+      # O preset 10 exige o conventional-changelog-writer 9, mas o
+      # @semantic-release/release-notes-generator mais recente (14.1.1, usado
+      # pelo semantic-release 25) ainda usa o writer 8: as notas de release
+      # quebrariam (#102). Liberar quando o release-notes-generator usar o
+      # writer 9. O `npm run check:release-notes` do CI confirma.
+      - dependency-name: "conventional-changelog-conventionalcommits"
+        versions: [">=10.0.0"]
     commit-message:
       prefix: "chore"
       include: "scope"
