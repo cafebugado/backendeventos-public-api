@@ -54,6 +54,12 @@ jobs:
       - name: Procurar credenciais versionadas
         run: npm run check:secrets
 
+      # O job `release` só roda depois do merge. Sem esta checagem, uma
+      # atualização incompatível das ferramentas de release passaria com o CI
+      # verde e só quebraria na próxima release (foi o caso do #102).
+      - name: Conferir geração das notas de release
+        run: npm run check:release-notes
+
   build:
     name: build
     runs-on: ubuntu-latest

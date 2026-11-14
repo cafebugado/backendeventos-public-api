@@ -32,6 +32,19 @@ porque o Jest não consegue carregar os pacotes ESM a partir de um projeto Commo
 Vitest compila com SWC (`unplugin-swc`), já que o esbuild padrão dele não emite os metadados
 de decorators de que a injeção de dependências do Nest precisa.
 
+> ⚠️ **Na Vercel o `require(esm)` vem desligado.** Sem a variável
+> `NODE_OPTIONS=--experimental-require-module`, a API cai na inicialização com
+> `ERR_REQUIRE_ESM` (500 `FUNCTION_INVOCATION_FAILED` em todas as rotas). Os testes locais e o
+> CI **não pegam** isso, porque no Node comum o recurso vem ligado. Para reproduzir
+> localmente: `npm run build && node --no-experimental-require-module dist/main`. Veja
+> [Deploy na Vercel](#deploy-na-vercel).
+
+**Por que `chokidar` está nas devDependencies sem ser importado:** a CLI do Nest 12 usa o
+`@angular-devkit`, que declara o `chokidar@^5` como dependência **opcional**. O npm 11 (usado
+pelo Dependabot e por quem tem npm novo) deixa esse pacote fora do lockfile, e o `npm ci` do
+npm 10 (o do Node 22, usado no CI) recusa o lock. Declarando o `chokidar@^5` explicitamente,
+o npm 10 e o npm 11 geram **o mesmo** lockfile. Não remova.
+
 ### Nota sobre a versão do Prisma
 
 O Prisma 7 (a major mais recente na época deste sprint) removeu o suporte a `url`/`directUrl`
@@ -78,6 +91,30 @@ aponta para o Postgres local do Docker.
 As credenciais do Supabase só existem nas variáveis de ambiente do deploy. A role de
 produção é criada pelo mantenedor com o script `prisma/setup-readonly-role.sql`, que fica
 fora do Git (gitignorado). Esse script não faz parte do setup de quem contribui.
+
+### Deploy na Vercel
+
+Na Vercel, cada variável vale **só para os ambientes marcados nela**. Uma variável que
+falta derruba a API na inicialização: a validação de `src/config/env.validation.ts` lança
+erro, e a função responde 500 em todas as rotas. Configuração esperada:
+
+| Variável | Production | Preview (só a branch `development`) | Por quê |
+|---|---|---|---|
+| `DATABASE_URL` | ✅ | ✅ | Pooler do Supabase, role `public_api_readonly` |
+| `DIRECT_URL` | ✅ | ✅ | Obrigatória na validação de env |
+| `CORS_ORIGINS` | ✅ | ✅ | Obrigatória na validação de env |
+| `NODE_OPTIONS` = `--experimental-require-module` | ✅ | ✅ | **NestJS 12 é ESM-only**: sem ela, `ERR_REQUIRE_ESM` no boot |
+| `PORT` | opcional | — | A Vercel ignora |
+| `SWAGGER_USER` / `SWAGGER_PASSWORD` | opcional | opcional | Basic Auth no `/docs` |
+
+- **Previews de PR não recebem credencial, de propósito.** O código de um PR não deve ter
+  acesso ao banco. A validação de PRs contra um Postgres real é feita pelo job `smoke-local`
+  do CI, com o banco do Docker. Por isso o Preview de um PR responde 500: é esperado.
+- **Variável nova:** cadastre em **Production** e no **Preview da branch `development`**.
+  Senão o ambiente de desenvolvimento cai (foi o caso da #84).
+- **Antes de promover algo que muda o runtime** (versão do Node, framework, formato de
+  módulo), confira primeiro o deploy de `development`. Ele é o único ambiente que roda com
+  as restrições reais da Vercel.
 
 ## Rodando localmente
 
