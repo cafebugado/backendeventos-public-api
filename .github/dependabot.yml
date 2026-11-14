@@ -8,6 +8,12 @@ updates:
       interval: "weekly"
       day: "monday"
     open-pull-requests-limit: 10
+    # Só propõe versões publicadas há pelo menos 7 dias. Pacotes comprometidos
+    # costumam ser descobertos e retirados do npm nos primeiros dias; a espera
+    # evita que um deles chegue ao CI, às máquinas de quem contribui ou à Vercel.
+    # Correções de segurança (Dependabot security updates) não esperam.
+    cooldown:
+      default-days: 7
     groups:
       # Os pacotes @nestjs/* exigem uns aos outros na MESMA major (ex.:
       # @nestjs/core@12 pede @nestjs/common@^12). Um PR por pacote nunca
@@ -70,6 +76,10 @@ updates:
       interval: "weekly"
       day: "monday"
     open-pull-requests-limit: 5
+    # Mesma espera das dependências npm: uma action comprometida roda no CI com
+    # acesso aos secrets do repositório.
+    cooldown:
+      default-days: 7
     commit-message:
       prefix: "chore"
       include: "scope"
