@@ -39,6 +39,12 @@ de decorators de que a injeção de dependências do Nest precisa.
 > localmente: `npm run build && node --no-experimental-require-module dist/main`. Veja
 > [Deploy na Vercel](#deploy-na-vercel).
 
+**Por que `chokidar` está nas devDependencies sem ser importado:** a CLI do Nest 12 usa o
+`@angular-devkit`, que declara o `chokidar@^5` como dependência **opcional**. O npm 11 (usado
+pelo Dependabot e por quem tem npm novo) deixa esse pacote fora do lockfile, e o `npm ci` do
+npm 10 (o do Node 22, usado no CI) recusa o lock. Declarando o `chokidar@^5` explicitamente,
+o npm 10 e o npm 11 geram **o mesmo** lockfile. Não remova.
+
 ### Nota sobre a versão do Prisma
 
 O Prisma 7 (a major mais recente na época deste sprint) removeu o suporte a `url`/`directUrl`
