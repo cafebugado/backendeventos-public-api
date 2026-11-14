@@ -236,7 +236,10 @@ Em todo PR e push para `development`/`production`, o workflow `CI`
 (`.github/workflows/ci.yml`) roda em paralelo:
 
 - **`lint`** — ESLint sem `--fix` (falha se houver algo para corrigir) e
-  busca de credenciais versionadas (`npm run check:secrets`)
+  busca de credenciais versionadas (`npm run check:secrets`) e geração das
+  notas de release (`npm run check:release-notes`). O job `release` só roda
+  depois do merge, e esta checagem pega antes uma atualização incompatível das
+  ferramentas de release
 - **`build`** — `prisma generate` + `nest build`
 - **`unit-tests`** — testes unitários com cobertura mínima obrigatória
 - **`e2e-tests`** — testes end-to-end
