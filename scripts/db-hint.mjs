@@ -12,5 +12,16 @@ console.error(`
   Os scripts de docker/postgres/init só rodam com o volume VAZIO. Se um init
   falhou, o volume fica pela metade e só o db:reset resolve.
   Docker parado? Abra o Docker Desktop e tente de novo.
+
+  Porta 5433 ocupada ("port is already allocated")? Use outra porta: coloque
+  DB_PORT=5440 no .env e troque 5433 por 5440 no DATABASE_URL e no DIRECT_URL.
+
+  Banco sobe, mas a API cai com P1000 ("Authentication failed ...
+  public_api_readonly")? Provavelmente um PostgreSQL instalado na máquina
+  escuta na 5433 e responde no lugar do container. Mesma solução da porta
+  acima. Detalhes em CONTRIBUTING.md, "Porta 5433 ocupada por outro Postgres".
+
+  API cai com P1001 ("Can't reach database server at localhost")? Use
+  127.0.0.1 no lugar de localhost no DATABASE_URL e no DIRECT_URL.
 `);
 process.exit(1);

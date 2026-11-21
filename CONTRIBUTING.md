@@ -188,9 +188,42 @@ Depois de um `git pull` que mexeu em `docker/postgres/init/`, rode
 | `db:up` falha logo depois de um init que deu erro | Volume ficou pela metade e o init não roda de novo | `npm run db:reset` |
 | `error during connect` / `dockerDesktopLinuxEngine` | Docker Desktop fechado | Abra o Docker Desktop e espere ficar "running" |
 | `port is already allocated` na 5433 | Outra coisa usando a porta | `DB_PORT=5440 npm run db:up` e troque a porta no `.env` |
+| `db:up` sobe sem erro, mas a API cai com `P1000` / `Authentication failed ... public_api_readonly` (mesmo depois de `db:reset`) | Um PostgreSQL instalado na máquina já escuta na 5433, e a API conecta nele em vez do container. No Windows é comum: o instalador usa a 5433 quando a 5432 já está ocupada | Veja o item [Porta 5433 ocupada por outro Postgres](#porta-5433-ocupada-por-outro-postgres) |
+| API cai com `P1001: Can't reach database server at localhost:...`, com o container saudável | Em algumas máquinas Windows, o Prisma não alcança o container pelo nome `localhost`, só pelo IP | Use `127.0.0.1` no lugar de `localhost` no `DATABASE_URL` e no `DIRECT_URL`, como no `.env.example` |
 | `column "x" does not exist` na API | Banco criado antes de uma mudança de schema | `npm run db:reset` |
 | `/events/upcoming` vazio | Banco criado há muito tempo e as datas do seed já passaram | `npm run db:reset` |
 | `permission denied for table ...` | Algo tentou escrever no banco: a role é somente leitura **de propósito** | Esta API não escreve. Reveja o código |
+
+#### Porta 5433 ocupada por outro Postgres
+
+Quando um PostgreSQL instalado na máquina já escuta na 5433, o Docker às vezes
+sobe o container sem reclamar. Mesmo assim, a porta 5433 da máquina responde pelo
+Postgres instalado, onde a role `public_api_readonly` não existe. O sintoma é a
+API cair com `P1000`, mesmo com o `db:reset` passando sem erro.
+
+Para ver quem está escutando na porta:
+
+```powershell
+# Windows (PowerShell)
+Get-NetTCPConnection -LocalPort 5433 -State Listen | % { Get-Process -Id $_.OwningProcess } | select Id, ProcessName
+```
+
+```bash
+# Linux / macOS
+lsof -iTCP:5433 -sTCP:LISTEN
+```
+
+Se aparecer `postgres`, a porta não é do container: no Windows, o processo do
+Docker aparece como `com.docker.backend` ou `wslrelay`. Para resolver, suba o
+container em outra porta:
+
+1. Acrescente `DB_PORT=5440` ao `.env`. O `docker compose` lê esse arquivo
+   sozinho, então a porta vale para todo `db:up` e `db:reset`.
+2. No mesmo `.env`, troque `5433` por `5440` no `DATABASE_URL` e no `DIRECT_URL`.
+3. `npm run db:down && npm run db:up`.
+
+Se você não usa o Postgres instalado, outra saída é parar o serviço dele
+(`services.msc` → `postgresql-x64-…`) e manter a 5433.
 
 ## Credenciais e arquivos `.env`
 
