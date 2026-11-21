@@ -171,8 +171,8 @@ jobs:
     env:
       PORT: '3000'
       CORS_ORIGINS: 'http://localhost:3000'
-      DATABASE_URL: 'postgresql://public_api_readonly:readonly_local@localhost:5433/postgres'
-      DIRECT_URL: 'postgresql://public_api_readonly:readonly_local@localhost:5433/postgres'
+      DATABASE_URL: 'postgresql://public_api_readonly:readonly_local@127.0.0.1:5433/postgres'
+      DIRECT_URL: 'postgresql://public_api_readonly:readonly_local@127.0.0.1:5433/postgres'
     steps:
       - name: Checkout
         uses: actions/checkout@v7
